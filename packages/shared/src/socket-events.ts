@@ -138,6 +138,7 @@ export interface ServerToClientEvents {
   "game:hintResult": (p: { hint: HintPayload; hintsAvailable: number }) => void;
   "game:state": (state: PublicGameState) => void;
   "game:botAiming": (p: { x: number; y: number }) => void;
+  "game:playerAiming": (p: { x: number; y: number }) => void;
   "game:over": (p: { winnerId: string; reason?: string }) => void;
   error: (p: { code: string; message: string }) => void;
 }
