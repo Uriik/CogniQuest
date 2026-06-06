@@ -46,4 +46,17 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+import { withSentryConfig } from "@sentry/nextjs";
+
+export default withSentryConfig(
+  nextConfig,
+  {
+    silent: true,
+    org: "cogniquest", // Sentry will override this with your DSN configuration
+    project: "cogniquest-web", // Sentry will override this with your DSN configuration
+    widenClientFileUpload: true,
+    hideSourceMaps: true,
+    disableLogger: true,
+    automaticVercelMonitors: true,
+  }
+);
