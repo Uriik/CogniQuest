@@ -8,15 +8,12 @@ const nextConfig = {
       ".mjs": [".mts", ".mjs"],
       ".cjs": [".cts", ".cjs"],
     };
-    if (isServer) {
-      config.externals.push("argon2");
-    }
     return config;
   },
   reactStrictMode: true,
   poweredByHeader: false,
   experimental: {
-    serverComponentsExternalPackages: ["argon2"],
+    serverComponentsExternalPackages: [],
   },
   images: {
     // allow external domains if needed, e.g. avatars
