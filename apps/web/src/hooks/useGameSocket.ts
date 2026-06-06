@@ -93,20 +93,7 @@ export function useGameSocket() {
 
     return () => {
       cancelled = true;
-      s.off("connect");
-      s.off("disconnect");
-      s.off("connect_error");
-      s.off("lobby:updated");
-      s.off("lobby:listed");
-      s.off("lobby:invite");
-      s.off("game:start");
-      s.off("game:question");
-      s.off("game:answerResult");
-      s.off("game:attackResult");
-      s.off("game:hintResult");
-      s.off("game:state");
-      s.off("game:over");
-      s.off("error");
+      disconnectSocket();
     };
   }, [(session as any)?.accessToken]);
 
