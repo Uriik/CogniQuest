@@ -55,6 +55,7 @@ jobs:
           service: ${{ env.WEB_SERVICE }}
           region: ${{ env.REGION }}
           image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/repo/${{ env.WEB_SERVICE }}:${{ github.sha }}
+          flags: '--allow-unauthenticated'
 
       - name: Deploy Game Server to Cloud Run
         uses: 'google-github-actions/deploy-cloudrun@v2'
@@ -62,3 +63,4 @@ jobs:
           service: ${{ env.GAME_SERVICE }}
           region: ${{ env.REGION }}
           image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/repo/${{ env.GAME_SERVICE }}:${{ github.sha }}
+          flags: '--allow-unauthenticated'
