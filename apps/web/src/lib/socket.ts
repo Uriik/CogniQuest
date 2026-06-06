@@ -46,14 +46,14 @@ export const getSocket = (token?: string): GameSocket => {
 
     // --- Monkey-patch for E2EE (Application-Layer Encryption) ---
     const originalEmit = socket.emit;
-    socket.emit = function (event: string, ...args: any[]) {
+    socket.emit = function (this: any, event: string, ...args: any[]) {
       const encryptedArgs = args.map(arg => encryptPayload(arg));
-      return originalEmit.call(this, event, ...encryptedArgs);
+      return (originalEmit as any).call(this, event, ...encryptedArgs);
     } as any;
 
     const originalOn = socket.on;
-    socket.on = function (event: string, listener: (...args: any[]) => void) {
-      return originalOn.call(this, event, (...args: any[]) => {
+    socket.on = function (this: any, event: string, listener: (...args: any[]) => void) {
+      return (originalOn as any).call(this, event, (...args: any[]) => {
         const decryptedArgs = args.map(arg => decryptPayload(arg));
         listener(...decryptedArgs);
       });

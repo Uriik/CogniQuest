@@ -62,7 +62,7 @@ export class AuthenticatedIoAdapter extends IoAdapter {
         const originalEmit = socket.emit;
         socket.emit = function (this: any, event: string, ...args: any[]) {
           const encryptedArgs = args.map(arg => encryptPayload(arg));
-          return originalEmit.call(this, event, ...encryptedArgs);
+          return (originalEmit as any).call(this, event, ...encryptedArgs);
         } as any;
         // ------------------------------------------------------
 
