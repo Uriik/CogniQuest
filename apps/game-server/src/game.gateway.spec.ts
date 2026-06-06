@@ -58,7 +58,7 @@ describe('GameGateway', () => {
       return null;
     });
 
-    await gateway.handleGameReady({ roomId }, mockClient);
+    await gateway.handleReady({ roomId }, mockClient);
 
     expect(mockRedis.hset).toHaveBeenCalledWith(`room:${roomId}`, { status: 'in_game' });
     

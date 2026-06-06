@@ -434,7 +434,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         targetRevealed.push(outcome);
 
         // Atualiza a memória da IA com o resultado do tiro.
-        this.updateAIMemory(gameState, x, y, result, sunk);
+        this.updateAIMemory(gameState, x, y, result, !!sunk);
 
         const allSunk = isFleetDestroyed(gameState.hostFleet);
         if (allSunk) {
