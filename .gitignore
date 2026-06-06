@@ -1,0 +1,56 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# turbo
+.turbo/
+
+# caveman runtime flags
+.caveman-active
+.caveman-statusline-suffix
+
+# litter de instalador de skills (npx skills add copia p/ todos os agents)
+# fonte de verdade = .claude/skills
+.adal/
+.aider-desk/
+.agents/
+.augment/
+.autohand/
+.bob/
+.continue/
+.crush/
+.goose/
+.junie/
+.kilocode/
+.kiro/
+.roo/
+.tabnine/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+data/
+skills/

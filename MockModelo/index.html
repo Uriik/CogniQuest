@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CogniQuest - Plataforma de Aprendizado Gamificado</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Fundo Holográfico e Orbes de Luz -->
+    <div class="cyber-bg-overlay"></div>
+    <div class="glow-bg-orb orb-1"></div>
+    <div class="glow-bg-orb orb-2"></div>
+
+    <!-- Container Geral de Notificações Toast -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ================= TELA 1: LOGIN / CADASTRO ================= -->
+    <section class="screen-view active-view" id="screen-login">
+        <div class="login-wrapper">
+            <div class="login-card">
+                <!-- Logo Grande -->
+                <div class="login-logo-area">
+                    <img src="./assets/logo_full.svg" alt="CogniQuest Logo" class="login-logo">
+                </div>
+                
+                <h2 class="login-title" id="login-card-title">Acesse sua Conta</h2>
+                <p class="login-subtitle" id="login-card-subtitle">Entre na arena do conhecimento gamificado</p>
+
+                <form id="login-form" onsubmit="event.preventDefault();">
+                    <div class="input-group">
+                        <label for="login-email">E-mail</label>
+                        <input type="email" id="login-email" placeholder="nome@exemplo.com" required>
+                    </div>
+
+                    <div class="input-group" id="group-password">
+                        <label for="login-password">Senha</label>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+
+                    <div class="input-group hidden-field" id="group-name">
+                        <label for="signup-name">Nome Completo</label>
+                        <input type="text" id="signup-name" placeholder="Seu nome de jogador">
+                    </div>
+
+                    <button type="submit" class="login-submit-btn" id="login-submit-btn">Entrar na Arena</button>
+                </form>
+
+                <div class="login-footer">
+                    <span id="login-switch-text">Não tem uma conta?</span>
+                    <button class="switch-link-btn" id="login-switch-btn">Cadastrar-se</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= CONTAINER PARA TELAS COM HEADER COMUM ================= -->
+    <div class="app-layout-wrapper hidden-view" id="app-layout-container">
+        
+        <!-- Header Principal (Exato do Mockup) -->
+        <header class="app-header">
+            <div class="header-container">
+                <div class="logo-area" id="header-logo-click">
+                    <img src="./assets/logo_icon.svg" alt="Icon" class="header-logo-icon">
+                    <span class="logo-text">CogniQuest</span>
+                </div>
+                
+                <nav class="nav-links">
+                    <button class="nav-link-btn active" id="nav-btn-dashboard">Dashboard</button>
+                    <button class="nav-link-btn" id="nav-btn-lobby">Salas de Espera</button>
+                    <button class="nav-link-btn" id="nav-btn-challenges" disabled>Desafios</button>
+                    <button class="nav-link-btn" id="nav-btn-ranking" disabled>Placares</button>
+                    <button class="nav-link-btn" id="nav-btn-community" disabled>Comunidade</button>
+                </nav>
+
+                <div class="user-profile">
+                    <div class="profile-info">
+                        <span class="profile-name" id="user-profile-name">Sarah J.</span>
+                        <span class="profile-level">Nível <span id="user-level">14</span></span>
+                    </div>
+                    <div class="profile-avatar">
+                        <span class="avatar-letter" id="avatar-letter-display">S</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ================= TELA 2: DASHBOARD (INÍCIO) ================= -->
+        <section class="screen-content screen-active" id="screen-dashboard">
+            <div class="main-wrapper">
+                <div class="games-carousel-section">
+                    <h1 class="section-title">Escolha seu Desafio</h1>
+                    <p class="section-subtitle">Navegue pelas missões e selecione seu jogo educativo</p>
+                    
+                    <div class="carousel-container">
+                        <button class="carousel-nav-btn prev-btn" id="prev-game-btn">←</button>
+                        
+                        <div class="carousel-track-wrapper">
+                            <div class="carousel-track" id="carousel-track">
+                                <!-- Card 1: Galactic Voyager -->
+                                <div class="carousel-card card-locked" data-game="orbital">
+                                    <div class="card-bg-img" style="background-image: url('orbital_cover.png');"></div>
+                                    <div class="card-overlay"></div>
+                                    <div class="card-body">
+                                        <h3>GALACTIC VOYAGER</h3>
+                                        <p>Spaceship</p>
+                                        <div class="card-footer">
+                                            <button class="card-action-btn locked">Bloqueado</button>
+                                            <div class="card-progress-bar"><div class="progress-fill" style="width: 40%; background: var(--accent-purple);"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 2: Naval Odyssey (Ativo) -->
+                                <div class="carousel-card active" data-game="naval">
+                                    <div class="card-bg-img" style="background-image: url('naval_cover.png');"></div>
+                                    <div class="card-overlay"></div>
+                                    <div class="card-body">
+                                        <h3>NAVAL ODYSSEY</h3>
+                                        <p>Naval Ship</p>
+                                        <div class="card-footer">
+                                            <button class="card-action-btn active" id="start-naval-btn">Jogar</button>
+                                            <div class="card-progress-bar"><div class="progress-fill" style="width: 65%"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card 3: Bio-Explorer -->
+                                <div class="carousel-card card-locked" data-game="eco">
+                                    <div class="card-bg-img" style="background-image: url('eco_cover.png');"></div>
+                                    <div class="card-overlay"></div>
+                                    <div class="card-body">
+                                        <h3>BIO-EXPLORER</h3>
+                                        <p>Bio-Plant</p>
+                                        <div class="card-footer">
+                                            <button class="card-action-btn locked">Bloqueado</button>
+                                            <div class="card-progress-bar"><div class="progress-fill" style="width: 25%; background: var(--accent-purple);"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="carousel-nav-btn next-btn" id="next-game-btn">→</button>
+                    </div>
+                    
+                    <!-- Indicadores do Carrossel -->
+                    <div class="carousel-dots">
+                        <span class="dot active"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TELA 3: FILA DE SALAS (LOBBY) ================= -->
+        <section class="screen-content" id="screen-lobby">
+            <div class="main-wrapper">
+                <div class="lobby-header-row">
+                    <div>
+                        <h1 class="page-title">Salas de Espera Ativas</h1>
+                        <p class="page-subtitle">Entre em uma sala aberta ou crie uma nova partida multijogador</p>
+                    </div>
+                    <button class="create-room-btn-main" id="lobby-to-create-btn">Criar Nova Sala</button>
+                </div>
+
+                <!-- Grid de Salas Ativas -->
+                <div class="rooms-grid" id="rooms-list-container">
+                    <!-- Gerado por JS, exemplo estático abaixo -->
+                    <div class="room-card">
+                        <div class="room-card-header">
+                            <span class="room-id">Sala #1042</span>
+                            <span class="room-players">1 / 2 Jogadores</span>
+                        </div>
+                        <div class="room-card-body">
+                            <div class="room-host-info">
+                                <span class="host-label">Hospedado por</span>
+                                <span class="host-name">Pedro_Fisico</span>
+                            </div>
+                            <div class="room-settings-badge">
+                                <span class="setting-tag">⚡ Física</span>
+                                <span class="setting-tag">11-14 anos</span>
+                            </div>
+                        </div>
+                        <div class="room-card-footer">
+                            <button class="join-room-btn" data-room-id="1042">Entrar na Sala</button>
+                        </div>
+                    </div>
+
+                    <div class="room-card">
+                        <div class="room-card-header">
+                            <span class="room-id">Sala #2089</span>
+                            <span class="room-players">1 / 2 Jogadores</span>
+                        </div>
+                        <div class="room-card-body">
+                            <div class="room-host-info">
+                                <span class="host-label">Hospedado por</span>
+                                <span class="host-name">Luiza_Math</span>
+                            </div>
+                            <div class="room-settings-badge">
+                                <span class="setting-tag">➕ Matemática</span>
+                                <span class="setting-tag">7-10 anos</span>
+                            </div>
+                        </div>
+                        <div class="room-card-footer">
+                            <button class="join-room-btn" data-room-id="2089">Entrar na Sala</button>
+                        </div>
+                    </div>
+
+                    <div class="room-card">
+                        <div class="room-card-header">
+                            <span class="room-id">Sala #3041</span>
+                            <span class="room-players">1 / 2 Jogadores</span>
+                        </div>
+                        <div class="room-card-body">
+                            <div class="room-host-info">
+                                <span class="host-label">Hospedado por</span>
+                                <span class="host-name">Gabriel_Bio</span>
+                            </div>
+                            <div class="room-settings-badge">
+                                <span class="setting-tag">🌱 Biologia</span>
+                                <span class="setting-tag">15-17 anos</span>
+                            </div>
+                        </div>
+                        <div class="room-card-footer">
+                            <button class="join-room-btn" data-room-id="3041">Entrar na Sala</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TELA 4: CRIAÇÃO DE SALA ================= -->
+        <section class="screen-content" id="screen-create-room">
+            <div class="main-wrapper">
+                <div class="back-link-row">
+                    <button class="back-link-btn" id="create-to-lobby-btn">← Voltar para as Salas</button>
+                </div>
+
+                <div class="create-room-container">
+                    <div class="create-room-card">
+                        <h1 class="create-title">Configurar Nova Sala</h1>
+                        <p class="create-subtitle">Defina a dificuldade e matéria do duelo de Naval Defense</p>
+
+                        <!-- Escolha de Atividade / Matéria -->
+                        <div class="setup-group">
+                            <label class="setup-label">Escolha a Matéria</label>
+                            <div class="setup-subject-grid">
+                                <button class="setup-subject-btn active" data-setup-subject="matematica">
+                                    <img src="./assets/icon_math.svg" alt="Math" class="setup-icon">
+                                    <span>Matemática</span>
+                                </button>
+                                <button class="setup-subject-btn" data-setup-subject="fisica">
+                                    <img src="./assets/icon_physics.svg" alt="Physics" class="setup-icon">
+                                    <span>Física</span>
+                                </button>
+                                <button class="setup-subject-btn" data-setup-subject="biologia">
+                                    <img src="./assets/icon_biology.svg" alt="Biology" class="setup-icon">
+                                    <span>Biologia</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Escolha de Idade / Dificuldade -->
+                        <div class="setup-group">
+                            <label class="setup-label">Faixa Etária (Dificuldade)</label>
+                            <div class="setup-age-selector">
+                                <button class="setup-age-btn active" data-setup-age="7-10">7 a 10 anos</button>
+                                <button class="setup-age-btn" data-setup-age="11-14">11 a 14 anos</button>
+                                <button class="setup-age-btn" data-setup-age="15-17">15 a 17 anos</button>
+                            </div>
+                        </div>
+
+                        <!-- Seção de Convite -->
+                        <div class="invite-generation-box">
+                            <div class="invite-info-row">
+                                <h3>Link de Convite da Sala</h3>
+                                <p>Gere e envie o link para o outro jogador entrar na sua sala.</p>
+                            </div>
+                            <div class="invite-input-row">
+                                <input type="text" id="invite-link-input" readonly value="https://cogniquest.com/join/sala-aguardando...">
+                                <button class="generate-invite-btn" id="generate-invite-btn">Copiar Link</button>
+                            </div>
+                        </div>
+
+                        <!-- Botão Iniciar Partida -->
+                        <div class="create-actions-row">
+                            <button class="start-match-btn" id="launch-game-btn">Iniciar Partida</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TELA 5: PARTIDA (DEFESA NAVAL) ================= -->
+        <section class="screen-content" id="screen-gameplay">
+            <div class="main-wrapper">
+                <div class="game-layout-grid">
+                    
+                    <!-- Grelha Radar de Combate (Lado Esquerdo) -->
+                    <div class="game-board-panel">
+                        <div class="board-header">
+                            <div>
+                                <h2 class="board-title">DEFESA NAVAL</h2>
+                                <!-- Telemetria Ativa contendo as configurações selecionadas -->
+                                <div class="telemetry-row">
+                                    <span class="telemetry-item">Radar Sector 7G</span>
+                                    <span class="telemetry-divider">|</span>
+                                    <span class="telemetry-item active-telemetry" id="telemetry-age-display">Idade: 7-10 anos</span>
+                                    <span class="telemetry-divider">|</span>
+                                    <span class="telemetry-item active-telemetry" id="telemetry-subject-display">Matéria: Matemática</span>
+                                    <span class="telemetry-divider">|</span>
+                                    <span class="telemetry-item active-telemetry">Pontos: <span id="user-score">0</span></span>
+                                </div>
+                            </div>
+                            <div class="status-indicator" id="game-status-text">
+                                Radar Active - Waiting Engagement
+                            </div>
+                        </div>
+
+                        <!-- Tabuleiro 10x10 com Varredura e Blips do Mockup -->
+                        <div class="battleship-board-container">
+                            <!-- Rótulos de Colunas Superiores (A-J) -->
+                            <div class="cols-header-row">
+                                <div class="col-header-cell">A</div>
+                                <div class="col-header-cell">B</div>
+                                <div class="col-header-cell">C</div>
+                                <div class="col-header-cell">D</div>
+                                <div class="col-header-cell">E</div>
+                                <div class="col-header-cell">F</div>
+                                <div class="col-header-cell">G</div>
+                                <div class="col-header-cell">H</div>
+                                <div class="col-header-cell">I</div>
+                                <div class="col-header-cell">J</div>
+                            </div>
+
+                            <div class="board-middle-row">
+                                <!-- Rótulos de Linhas (1-10) -->
+                                <div class="rows-header-column">
+                                    <div class="row-header-cell">1</div>
+                                    <div class="row-header-cell">2</div>
+                                    <div class="row-header-cell">3</div>
+                                    <div class="row-header-cell">4</div>
+                                    <div class="row-header-cell">5</div>
+                                    <div class="row-header-cell">6</div>
+                                    <div class="row-header-cell">7</div>
+                                    <div class="row-header-cell">8</div>
+                                    <div class="row-header-cell">9</div>
+                                    <div class="row-header-cell">10</div>
+                                </div>
+
+                                <!-- Box do Tabuleiro (Contorno + Células + Varredura + Navio) -->
+                                <div class="board-cells-box">
+                                    <!-- Navio Blueprint de Fundo -->
+                                    <div class="floating-ship-bg" style="background-image: url('naval_cover.png');"></div>
+
+                                    <!-- Varredura de Radar Animada -->
+                                    <div class="radar-sweep"></div>
+
+                                    <!-- Área do Grid -->
+                                    <div class="board-grid-area" id="battleship-grid">
+                                        <!-- Injetado por JS -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Rótulos de Colunas Inferiores (A-J) -->
+                            <div class="cols-header-row bottom-row-labels">
+                                <div class="col-header-cell">A</div>
+                                <div class="col-header-cell">B</div>
+                                <div class="col-header-cell">C</div>
+                                <div class="col-header-cell">D</div>
+                                <div class="col-header-cell">E</div>
+                                <div class="col-header-cell">F</div>
+                                <div class="col-header-cell">G</div>
+                                <div class="col-header-cell">H</div>
+                                <div class="col-header-cell">I</div>
+                                <div class="col-header-cell">J</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Painéis Laterais (Lado Direito) -->
+                    <aside class="game-side-panels">
+                        
+                        <!-- Painel 1: Missions (Estilo Exato do Mockup) -->
+                        <div class="game-control-panel">
+                            <div class="panel-header-row">
+                                <h3 class="panel-headline">Missions</h3>
+                                <span class="panel-dot-menu">•••</span>
+                            </div>
+                            
+                            <div class="missions-content">
+                                <div class="mission-details">
+                                    <div class="mission-info">
+                                        <span class="mission-label">Current</span>
+                                        <span class="mission-name">Defend Sector A</span>
+                                    </div>
+                                    <!-- Progress Ring 65% -->
+                                    <div class="mission-progress-ring">
+                                        <span class="ring-percentage">65%</span>
+                                    </div>
+                                </div>
+
+                                <div class="control-group">
+                                    <label class="control-label">Progress</label>
+                                    <div class="card-progress-bar"><div class="progress-fill" style="width: 65%"></div></div>
+                                </div>
+
+                                <div class="control-group">
+                                    <label class="control-label">Estatísticas do Duelo</label>
+                                    <div class="stats-grid">
+                                        <div class="stat-row">
+                                            <span>Questões Respondidas:</span>
+                                            <span id="stat-total-questions">0</span>
+                                        </div>
+                                        <div class="stat-row">
+                                            <span>Acertos:</span>
+                                            <span id="stat-correct-answers" style="color: var(--success);">0</span>
+                                        </div>
+                                        <div class="stat-row">
+                                            <span>Erros:</span>
+                                            <span id="stat-incorrect-answers" style="color: var(--error);">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Botões de Ação Circulares (Apenas Simulados conforme imagem) -->
+                                <div class="mission-action-icons">
+                                    <button class="action-circle-btn active-purple" id="gameplay-exit-btn" title="Voltar ao Início">
+                                        <span>🏠</span>
+                                    </button>
+                                    <button class="action-circle-btn active-cyan" id="gameplay-hint-btn" title="Dica Rápida">
+                                        <span>🧠</span>
+                                    </button>
+                                    <button class="action-circle-btn" id="gameplay-info-btn" title="Tutorial">
+                                        <span>ℹ️</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Painel 2: Fleet Status (Estilo Exato do Mockup) -->
+                        <div class="game-control-panel fleet-status-panel">
+                            <div class="panel-header-row">
+                                <h3 class="panel-headline">Fleet Status</h3>
+                                <span class="panel-dot-menu">•••</span>
+                            </div>
+
+                            <div class="fleet-list">
+                                <div class="fleet-item" id="fleet-sub">
+                                    <div class="fleet-icon">🚢</div>
+                                    <div class="fleet-info">
+                                        <span class="fleet-name">Submarine</span>
+                                        <span class="fleet-status status-ready">Ready</span>
+                                    </div>
+                                    <div class="fleet-progress-ring ring-ready"></div>
+                                </div>
+                                <div class="fleet-item" id="fleet-dest">
+                                    <div class="fleet-icon">⚓</div>
+                                    <div class="fleet-info">
+                                        <span class="fleet-name">Destroyer</span>
+                                        <span class="fleet-status status-active">Active</span>
+                                    </div>
+                                    <div class="fleet-progress-ring ring-active"></div>
+                                </div>
+                                <div class="fleet-item" id="fleet-cru">
+                                    <div class="fleet-icon">🚀</div>
+                                    <div class="fleet-info">
+                                        <span class="fleet-name">Cruiser</span>
+                                        <span class="fleet-status status-deployed">Deployed</span>
+                                    </div>
+                                    <div class="fleet-progress-ring ring-deployed"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </aside>
+
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modal de Pergunta (Glassmorphic) -->
+    <div class="question-modal-overlay" id="question-modal">
+        <div class="question-modal-box">
+            <div class="modal-top-bar">
+                <span class="modal-subject-tag" id="question-subject">Matemática</span>
+                <span class="modal-age-tag" id="question-age">7-10 anos</span>
+            </div>
+            <div class="modal-main-content">
+                <h3 class="modal-question-text" id="question-text">Pergunta?</h3>
+                <div class="modal-options-list" id="options-container">
+                    <!-- Injetado por JS -->
+                </div>
+            </div>
+            <div class="modal-bottom-hint">
+                Responda corretamente para confirmar o disparo do torpedo!
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

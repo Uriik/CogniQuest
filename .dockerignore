@@ -1,0 +1,14 @@
+node_modules
+.turbo
+.next
+dist
+build
+coverage
+.env
+.git
+.claude
+playwright-report
+test-results
+infra/
+docs/
+legacy-mock/
