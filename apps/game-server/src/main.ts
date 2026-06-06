@@ -50,8 +50,7 @@ export class AuthenticatedIoAdapter extends IoAdapter {
 
 async function bootstrap() {
   if (!process.env.AUTH_SECRET) {
-    console.error("FATAL ERROR: AUTH_SECRET is not defined. Shutting down.");
-    process.exit(1);
+    console.error("WARNING: AUTH_SECRET is not defined. Authentication will fail until environment variables are set.");
   }
 
   const app = await NestFactory.create(AppModule);
