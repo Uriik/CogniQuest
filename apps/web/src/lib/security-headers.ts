@@ -16,10 +16,13 @@ export function buildCsp(nonce: string, opts: CspOptions = {}): string {
   const turnstile = opts.enableTurnstile
     ? ["https://challenges.cloudflare.com"]
     : [];
-  const ws = opts.gameServerOrigin
+  const gs = opts.gameServerOrigin || "";
+  const ws = gs
     ? [
-        opts.gameServerOrigin.replace(/^http/, "ws"),
-        opts.gameServerOrigin,
+        gs.replace(/^http/, "ws"),
+        gs,
+        // Allow trailing-slash variants
+        gs.endsWith("/") ? gs.slice(0, -1) : gs + "/",
       ]
     : [];
 
