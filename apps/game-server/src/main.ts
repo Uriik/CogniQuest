@@ -19,7 +19,14 @@ export class AuthenticatedIoAdapter extends IoAdapter {
   }
 
   override createIOServer(port: number, options?: any): any {
-    const server: Server = super.createIOServer(port, options);
+    const corsOrigin = process.env.WEB_CLIENT_URL || 'http://localhost:3000';
+    const server: Server = super.createIOServer(port, {
+      ...options,
+      cors: {
+        origin: corsOrigin,
+        credentials: true,
+      },
+    });
     server.adapter(this.adapterConstructor);
 
     server.use(async (socket, next) => {
