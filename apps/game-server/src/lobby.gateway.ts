@@ -133,6 +133,7 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit('lobby:created', { roomId, code, inviteToken });
       this.server.to(roomId).emit('lobby:updated', state);
+      this.broadcastLobbyUpdate();
 
     } catch (error) {
       client.emit('error', { code: 'INVALID_PAYLOAD', message: 'Invalid payload or error creating lobby' });
@@ -213,6 +214,7 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const updatedState = await redis.hgetall(`room:${roomId}`);
       this.server.to(roomId).emit('lobby:updated', toPublicRoomState(updatedState));
+      this.broadcastLobbyUpdate();
 
     } catch (error) {
       client.emit('error', { code: 'INVALID_PAYLOAD', message: 'Invalid payload or join error' });
@@ -267,13 +269,26 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
       await redis.hset(`room:${roomId}`, { name: name.trim() });
       const updated = await redis.hgetall(`room:${roomId}`);
       this.server.to(roomId).emit('lobby:updated', toPublicRoomState(updated));
+      this.broadcastLobbyUpdate();
     } catch (error) {
       client.emit('error', { code: 'INVALID_PAYLOAD', message: 'Invalid payload' });
     }
   }
 
-  @SubscribeMessage('lobby:list')
-  async handleLobbyList(@ConnectedSocket() client: Socket) {
+  @SubscribeMessage('lobby:subscribe')
+  async handleLobbySubscribe(@ConnectedSocket() client: Socket) {
+    client.join('lobby_watchers');
+    // Emite o estado inicial imediatamente para o cliente
+    const rooms = await this.getLobbyList();
+    client.emit('lobby:listed', rooms);
+  }
+
+  @SubscribeMessage('lobby:unsubscribe')
+  async handleLobbyUnsubscribe(@ConnectedSocket() client: Socket) {
+    client.leave('lobby_watchers');
+  }
+
+  private async getLobbyList(): Promise<PublicRoomState[]> {
     try {
       // Mais recentes primeiro.
       const ids = await redis.zrevrange('room:public:index', 0, 49);
@@ -296,10 +311,21 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
         rooms.push(toPublicRoomState(r));
       }
-      client.emit('lobby:listed', rooms);
-    } catch (error) {
-      client.emit('lobby:listed', []);
+      return rooms;
+    } catch {
+      return [];
     }
+  }
+
+  private async broadcastLobbyUpdate() {
+    const rooms = await this.getLobbyList();
+    this.server.to('lobby_watchers').emit('lobby:listed', rooms);
+  }
+
+  @SubscribeMessage('lobby:list')
+  async handleLobbyList(@ConnectedSocket() client: Socket) {
+    const rooms = await this.getLobbyList();
+    client.emit('lobby:listed', rooms);
   }
 
   @SubscribeMessage('lobby:getInvite')
@@ -395,6 +421,7 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (r.mode !== 'solo') await redis.zadd('room:public:index', Date.now(), roomId);
         const updated = await redis.hgetall(`room:${roomId}`);
         this.server.to(roomId).emit('lobby:updated', toPublicRoomState(updated));
+        this.broadcastLobbyUpdate();
       } else {
         // Sem ninguém → deleta (garantido).
         await this.deleteRoom(roomId, r);
@@ -406,6 +433,7 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (r.mode !== 'solo') await redis.zadd('room:public:index', Date.now(), roomId);
       const updated = await redis.hgetall(`room:${roomId}`);
       this.server.to(roomId).emit('lobby:updated', toPublicRoomState(updated));
+      this.broadcastLobbyUpdate();
     }
   }
 
@@ -422,5 +450,6 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
       await redis.del(`user:${r.guestId}:room`, `room:${roomId}:ready:${r.guestId}`);
     }
     this.server.to(roomId).emit('error', { code: 'ROOM_CLOSED', message: 'Sala encerrada.' });
+    this.broadcastLobbyUpdate();
   }
 }
