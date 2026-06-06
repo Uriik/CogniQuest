@@ -18,12 +18,12 @@
   },
   "dependencies": {
     "@cogniquest/shared": "workspace:*",
-    "drizzle-orm": "^0.33.0",
     "ioredis": "^5.4.1",
     "postgres": "^3.4.0"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.24.0",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
     "tsx": "^4.16.0",
     "typescript": "^5.5.0"
   }

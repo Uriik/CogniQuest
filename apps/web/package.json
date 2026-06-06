@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@cogniquest/auth": "workspace:*",
-  "@cogniquest/db": "workspace:*",
+    "@cogniquest/db": "workspace:*",
     "@cogniquest/game-engine": "workspace:*",
     "@cogniquest/shared": "workspace:*",
     "@marsidev/react-turnstile": "^1.5.2",
-    "drizzle-orm": "^0.33.0",
+    "drizzle-orm": "^0.45.2",
     "framer-motion": "^11.2.10",
     "ioredis": "^5.4.1",
     "lucide-react": "^0.395.0",

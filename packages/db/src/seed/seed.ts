@@ -4,7 +4,15 @@
  *
  * Run: pnpm db:seed   (needs DATABASE_URL)
  */
-import { SUBJECTS } from "@cogniquest/shared";
+const SUBJECTS = [
+  { slug: "math", name: "Matemática", icon: "assets/icon_math.svg" },
+  { slug: "physics", name: "Física", icon: "assets/icon_physics.svg" },
+  { slug: "biology", name: "Biologia", icon: "assets/icon_biology.svg" },
+  { slug: "chemistry", name: "Química", icon: "assets/icon_chemistry.svg" },
+  { slug: "portuguese", name: "Português", icon: "assets/icon_portuguese.svg" },
+  { slug: "history", name: "História", icon: "assets/icon_history.svg" },
+  { slug: "geography", name: "Geografia", icon: "assets/icon_geography.svg" },
+];
 import { getDb } from "../index.js";
 import { questionOptions, questions, subjects } from "../schema/index.js";
 import { seedQuestions } from "./questions.js";
