@@ -29,28 +29,9 @@ export const cacheKey = (subjectSlug: string, ageBand: string) =>
 export async function getRandomQuestions(
   subjectSlug: string,
   ageBand: string,
-  limit: number = 10,
+  limit: number = 50,
   store?: CacheStore
 ): Promise<PublicQuestion[]> {
-  const key = cacheKey(subjectSlug, ageBand);
-
-  // Try cache first
-  if (store) {
-    const cached = await store.get(key);
-    if (cached) {
-      try {
-        const parsed: PublicQuestion[] = JSON.parse(cached);
-        // If we have enough in cache, we could pop some or return random slice.
-        // For simplicity, return the cached batch. In a real scenario we'd use Redis sets or lists to pop.
-        if (parsed.length >= limit) {
-          return parsed.slice(0, limit).sort(() => Math.random() - 0.5);
-        }
-      } catch (e) {
-        // ignore cache error
-      }
-    }
-  }
-
   const db = getDb();
 
   const randomQ = await db
@@ -62,7 +43,7 @@ export async function getRandomQuestions(
     .innerJoin(subjects, eq(questions.subjectId, subjects.id))
     .where(and(eq(subjects.slug, subjectSlug), eq(questions.ageBand, ageBand)))
     .orderBy(sql`RANDOM()`)
-    .limit(limit * 2); // Fetch extra for cache
+    .limit(limit);
 
   if (randomQ.length === 0) return [];
 
@@ -81,14 +62,10 @@ export async function getRandomQuestions(
   const result: PublicQuestion[] = randomQ.map((q) => ({
     id: q.id,
     prompt: q.prompt,
-    options: options.filter((o) => o.questionId === q.id),
+    options: options.filter((o) => o.questionId === q.id).sort(() => Math.random() - 0.5), // shuffle options
   }));
 
-  if (store) {
-    await store.set(key, JSON.stringify(result), 3600); // 1h cache
-  }
-
-  return result.slice(0, limit);
+  return result;
 }
 
 export async function checkAnswer(questionId: string, optionId: string): Promise<boolean> {
