@@ -38,4 +38,4 @@ WORKDIR /app/apps/game-server
 EXPOSE 3001
 ENV PORT=3001
 
-CMD ["node", "dist/main.js"]
+CMD ["npx", "tsx", "src/main.ts"]
