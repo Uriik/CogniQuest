@@ -147,7 +147,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // IMPORTANTE: prepara TUDO (perguntas, estado) ANTES de marcar in_game.
         // Se algo falhar aqui, o status continua 'ready' e ninguém fica preso
         // numa sala 'in_game' sem nunca receber os eventos de início.
-        const fetchedQs = await getRandomQuestions(roomData.subjectSlug!, roomData.ageBand!, 20);
+        const fetchedQs = await getRandomQuestions(roomData.subjectSlug!, roomData.ageBand!, 50);
         await redis.set(`game:${roomId}`, JSON.stringify(gameState), 'EX', 86400);
         await redis.set(`game:${roomId}:questions`, JSON.stringify(fetchedQs), 'EX', 86400);
 
@@ -198,10 +198,31 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       gameState.pendingAttack = { x: parsed.x, y: parsed.y };
       await redis.set(`game:${roomId}`, JSON.stringify(gameState), 'EX', 86400);
 
+      // Verifica se o jogador já tem uma pergunta pendente (caso tente burlar a interface)
+      const existingQStr = await redis.get(`game:${roomId}:currentQ:${userId}`);
+      if (existingQStr) {
+        const q = JSON.parse(existingQStr);
+        client.emit('game:question', { questionId: q.id, prompt: q.prompt, options: q.options });
+        return;
+      }
+
       const qStr = await redis.get(`game:${roomId}:questions`);
       if (qStr) {
-        const qs = JSON.parse(qStr);
-        const q = qs[Math.floor(Math.random() * qs.length)];
+        let qs = JSON.parse(qStr);
+
+        // Se acabaram as perguntas da memória, busca um novo lote de 50 no banco de dados
+        if (qs.length === 0) {
+          const roomData = await redis.hgetall(`room:${roomId}`);
+          qs = await getRandomQuestions(roomData.subjectSlug!, roomData.ageBand!, 50);
+        }
+
+        const randomIndex = Math.floor(Math.random() * qs.length);
+        const q = qs[randomIndex];
+        
+        // Remove a pergunta da lista para não repetir na mesma partida!
+        qs.splice(randomIndex, 1);
+        await redis.set(`game:${roomId}:questions`, JSON.stringify(qs), 'EX', 86400);
+
         await redis.set(`game:${roomId}:currentQ:${userId}`, JSON.stringify(q), 'EX', 3600);
         client.emit('game:question', { questionId: q.id, prompt: q.prompt, options: q.options });
       }
@@ -278,6 +299,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.simulateAITurn(roomId);
         }
       }
+
+      // SEMPRE deleta a pergunta atual após ela ser respondida (certa ou errada)
+      await redis.del(`game:${roomId}:currentQ:${userId}`);
     } catch (error) {
       client.emit('error', { code: 'INVALID_PAYLOAD', message: 'Invalid payload' });
     }
