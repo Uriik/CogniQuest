@@ -23,7 +23,10 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `window.__ENV = { GAME_SERVER_URL: "${process.env.GAME_SERVER_URL || process.env.NEXT_PUBLIC_GAME_SERVER_URL || ''}" }`,
+            __html: `window.__ENV = { 
+              GAME_SERVER_URL: "${process.env.GAME_SERVER_URL || process.env.NEXT_PUBLIC_GAME_SERVER_URL || ''}",
+              TURNSTILE_SITE_KEY: "${process.env.TURNSTILE_SITE_KEY || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''}"
+            }`,
           }}
         />
       </head>
