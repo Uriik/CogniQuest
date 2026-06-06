@@ -16,19 +16,6 @@ export interface SeedQuestion {
 }
 
 export const seedQuestions: SeedQuestion[] = [
-  // ---- Matemática ----
-  { subjectSlug: "math", ageBand: "6-8", prompt: "Quanto é 8 x 7?", options: ["54", "56", "58", "60"], answerIndex: 1 },
-  { subjectSlug: "math", ageBand: "6-8", prompt: "Quanto é 5 + 4?", options: ["8", "9", "10", "7"], answerIndex: 1 },
-  { subjectSlug: "math", ageBand: "6-8", prompt: "Quanto é 10 - 3?", options: ["6", "7", "8", "9"], answerIndex: 1 },
-  { subjectSlug: "math", ageBand: "9-11", prompt: "Qual é a raiz quadrada de 144?", options: ["10", "11", "12", "14"], answerIndex: 2 },
-  { subjectSlug: "math", ageBand: "9-11", prompt: "Quanto é 12 x 5?", options: ["50", "55", "60", "65"], answerIndex: 2 },
-  { subjectSlug: "math", ageBand: "9-11", prompt: "Qual a metade de 50?", options: ["20", "25", "30", "15"], answerIndex: 1 },
-  { subjectSlug: "math", ageBand: "12-14", prompt: "Qual o valor de x em 2x + 5 = 15?", options: ["5", "10", "2", "4"], answerIndex: 0 },
-  { subjectSlug: "math", ageBand: "12-14", prompt: "Qual é a área de um quadrado de lado 4?", options: ["8", "12", "16", "20"], answerIndex: 2 },
-  { subjectSlug: "math", ageBand: "12-14", prompt: "Quanto é 2³?", options: ["6", "8", "10", "12"], answerIndex: 1 },
-  { subjectSlug: "math", ageBand: "15+", prompt: "Qual o valor de log10(1000)?", options: ["1", "2", "3", "10"], answerIndex: 2 },
-  { subjectSlug: "math", ageBand: "15+", prompt: "Qual é a derivada de x²?", options: ["x", "2x", "x³/3", "2"], answerIndex: 1 },
-  { subjectSlug: "math", ageBand: "15+", prompt: "Qual a probabilidade de tirar 'cara' em uma moeda justa?", options: ["25%", "50%", "75%", "100%"], answerIndex: 1 },
 
   // ---- Física ----
   { subjectSlug: "physics", ageBand: "6-8", prompt: "O que faz a maçã cair da árvore?", options: ["O vento", "A gravidade", "A luz solar", "A água"], answerIndex: 1 },

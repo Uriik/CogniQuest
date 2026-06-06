@@ -23,12 +23,14 @@ export default function GamePage({ params }: { params: { roomId: string } }) {
     answerFeedback,
     enemyRevealed,
     myRevealed,
-    botAiming,
+    activeAttack,
+    surrendered,
     myAnswers,
     enemyFleet
   } = useGameSocket();
 
   const [isSetupDone, setIsSetupDone] = useState(false);
+  const [turnAnnouncement, setTurnAnnouncement] = useState<string | null>(null);
 
   // Removido o auto game:ready. O SetupBoard agora emite o game:ready.
   useEffect(() => {
@@ -36,6 +38,14 @@ export default function GamePage({ params }: { params: { roomId: string } }) {
       setIsSetupDone(true);
     }
   }, [roomState?.status]);
+
+  useEffect(() => {
+    if (roomState?.status === 'in_game' && gameState) {
+      setTurnAnnouncement(isMyTurn ? "SUA VEZ" : "TURNO DO INIMIGO");
+      const t = setTimeout(() => setTurnAnnouncement(null), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [isMyTurn, roomState?.status, gameState?.turn]);
 
   // Sincroniza o estado da sala ao montar (o socket é singleton e o
   // lobby:updated inicial já foi consumido na página anterior). Sem isso, o
@@ -119,6 +129,16 @@ export default function GamePage({ params }: { params: { roomId: string } }) {
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center gap-4">
         <h2 className="text-4xl text-[var(--primary)] font-bold mb-4">Partida Finalizada</h2>
         <p className="text-xl">Vencedor: {winnerId === gameState?.roomId ? "Máquina" : winnerId}</p>
+        <button className="start-match-btn max-w-xs mt-8" onClick={handleExit}>Voltar ao Início</button>
+      </div>
+    );
+  }
+
+  if (surrendered) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center gap-4">
+        <h2 className="text-4xl text-[var(--primary)] font-bold mb-4">Vitória por Desistência!</h2>
+        <p className="text-xl">Oponente se rendeu, deixou a partida.</p>
         <button className="start-match-btn max-w-xs mt-8" onClick={handleExit}>Voltar ao Início</button>
       </div>
     );
@@ -215,13 +235,20 @@ export default function GamePage({ params }: { params: { roomId: string } }) {
 
   return (
     <div className="game-layout-grid relative">
+      {turnAnnouncement && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none bg-black/30 backdrop-blur-sm animate-pulse transition-opacity duration-500">
+          <h1 className="text-5xl md:text-7xl font-black text-white tracking-[0.2em] uppercase drop-shadow-[0_0_30px_rgba(0,255,255,1)]">
+            {turnAnnouncement}
+          </h1>
+        </div>
+      )}
       <RadarPanel 
         gameState={gameState} 
         revealed={isMyTurn ? enemyRevealed : myRevealed}
         fleet={isMyTurn ? enemyFleet : myFleet}
         onAttack={handleAttackIntent} 
         isMyTurn={isMyTurn} 
-        botAiming={botAiming}
+        activeAttack={activeAttack}
       />
       <FleetStatusPanel 
         myFleet={myFleet} 
