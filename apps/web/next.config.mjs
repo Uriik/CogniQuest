@@ -8,6 +8,9 @@ const nextConfig = {
       ".mjs": [".mts", ".mjs"],
       ".cjs": [".cts", ".cjs"],
     };
+    if (isServer) {
+      config.externals.push("argon2");
+    }
     return config;
   },
   reactStrictMode: true,
