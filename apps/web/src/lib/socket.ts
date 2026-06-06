@@ -8,7 +8,8 @@ let socket: GameSocket | null = null;
 
 export const getSocket = (token?: string): GameSocket => {
   if (!socket) {
-    const url = process.env.NEXT_PUBLIC_GAME_SERVER_URL || "http://localhost:3001";
+    const envUrl = typeof window !== 'undefined' ? (window as any).__ENV?.GAME_SERVER_URL : undefined;
+    const url = envUrl || process.env.NEXT_PUBLIC_GAME_SERVER_URL || "http://localhost:3001";
     socket = io(url, {
       autoConnect: false,
       withCredentials: true,
