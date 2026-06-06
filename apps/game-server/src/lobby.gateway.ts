@@ -7,6 +7,8 @@ import {
   OnGatewayDisconnect,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { UseGuards } from '@nestjs/common';
+import { WsThrottlerGuard } from './common/guards/ws-throttler.guard';
 import { Server, Socket } from 'socket.io';
 import {
   lobbyCreateSchema,
@@ -25,6 +27,7 @@ const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 redis.on('error', (err) => console.error('Redis Error:', err.message));
 
 @WebSocketGateway({ cors: { origin: process.env.WEB_CLIENT_URL || 'http://localhost:3000', credentials: true } })
+@UseGuards(WsThrottlerGuard)
 export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
