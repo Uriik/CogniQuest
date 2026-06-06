@@ -12,7 +12,9 @@ export class AuthenticatedIoAdapter extends IoAdapter {
   constructor(app: any) {
     super(app);
     const pubClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    pubClient.on('error', (err) => console.error('Redis PubClient Error:', err.message));
     const subClient = pubClient.duplicate();
+    subClient.on('error', (err) => console.error('Redis SubClient Error:', err.message));
     this.adapterConstructor = createAdapter(pubClient, subClient);
   }
 

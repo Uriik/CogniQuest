@@ -16,6 +16,7 @@ import { randomUUID } from 'crypto';
 import Redis from 'ioredis';
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+redis.on('error', (err) => console.error('Redis Error:', err.message));
 
 @WebSocketGateway({ cors: { origin: process.env.WEB_CLIENT_URL || 'http://localhost:3000', credentials: true } })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
