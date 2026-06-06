@@ -8,12 +8,12 @@ interface RadarPanelProps {
   gameState: PublicGameState | null;
   revealed: { x: number; y: number; result: AttackOutcome }[];
   fleet?: FleetSummary | null;
-  botAiming?: { x: number; y: number } | null;
+  activeAttack?: { x: number; y: number } | null;
   onAttack: (x: number, y: number) => void;
   isMyTurn: boolean;
 }
 
-export function RadarPanel({ gameState, revealed, fleet, botAiming, onAttack, isMyTurn }: RadarPanelProps) {
+export function RadarPanel({ gameState, revealed, fleet, activeAttack, onAttack, isMyTurn }: RadarPanelProps) {
   const [hoveredCell, setHoveredCell] = useState<{x: number, y: number} | null>(null);
 
   const getCellState = (x: number, y: number) => {
@@ -41,7 +41,8 @@ export function RadarPanel({ gameState, revealed, fleet, botAiming, onAttack, is
             key={`${x}-${y}`} 
             className={cellClass}
             onClick={() => {
-              if (isMyTurn && !outcome) {
+              // Block click if there is an active missile animation to prevent race conditions
+              if (isMyTurn && !outcome && !activeAttack) {
                 onAttack(x, y);
               }
             }}
@@ -114,7 +115,7 @@ export function RadarPanel({ gameState, revealed, fleet, botAiming, onAttack, is
             ))}
           </div>
 
-          <div className={`board-cells-box relative ${botAiming ? 'board-shake' : ''}`}>
+          <div className={`board-cells-box relative ${activeAttack ? 'board-shake' : ''}`}>
             <div className="floating-ship-bg" style={{ backgroundImage: "url('/naval_cover.png')" }}></div>
             <div className="radar-sweep"></div>
             <div className="board-grid-area">
@@ -164,14 +165,14 @@ export function RadarPanel({ gameState, revealed, fleet, botAiming, onAttack, is
               );
             })}
 
-            {/* Ataque do Oponente: míssil voa de fora até a célula, trava a mira e explode */}
-            {botAiming && (
+            {/* Ataque: míssil voa de fora até a célula, trava a mira e explode */}
+            {activeAttack && (
               <div
-                key={`atk-${botAiming.x}-${botAiming.y}`}
+                key={`atk-${activeAttack.x}-${activeAttack.y}`}
                 className="bot-attack-layer"
                 style={{
-                  top: `${botAiming.y * 10}%`,
-                  left: `${botAiming.x * 10}%`,
+                  top: `${activeAttack.y * 10}%`,
+                  left: `${activeAttack.x * 10}%`,
                 }}
               >
                 {/* Impacto: onda de choque + flash (disparam após o míssil chegar) */}

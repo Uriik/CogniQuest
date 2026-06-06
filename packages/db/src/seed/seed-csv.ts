@@ -1,95 +1,88 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import fs from "fs";
-import path from "path";
-import * as schema from "../schema/index.js";
+import { getDb } from "../index.js";
+import { questions, questionOptions, subjects } from "../schema/index.js";
+import * as crypto from "crypto";
 import { eq } from "drizzle-orm";
+import * as fs from "fs";
+import * as path from "path";
+import * as readline from "readline";
 
-const connectionString = process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/cogniquest";
-const client = postgres(connectionString);
-const db = drizzle(client, { schema });
-
-async function seed() {
-  console.log("Starting CSV seed...");
-
-  // Ensure "math" subject exists
-  let mathSubject = await db.query.subjects.findFirst({
-    where: eq(schema.subjects.slug, "math")
+async function main() {
+  const db = getDb();
+  
+  // Get math subject
+  const mathSubject = await db.query.subjects.findFirst({
+    where: eq(subjects.slug, "math")
   });
 
   if (!mathSubject) {
-    console.log("Creating math subject...");
-    const [inserted] = await db.insert(schema.subjects).values({
-      slug: "math",
-      name: "Matemática",
-      icon: "/assets/math-icon.svg"
-    }).returning();
-    mathSubject = inserted;
+    throw new Error("Math subject not found in DB!");
   }
 
   const csvPath = path.resolve(process.cwd(), "../../matematica/matematica_completo.csv");
-  console.log(`Reading CSV from ${csvPath}...`);
-  
-  if (!fs.existsSync(csvPath)) {
-    console.error("CSV file not found!");
-    process.exit(1);
-  }
+  console.log(`Reading from: ${csvPath}`);
 
-  const csvContent = fs.readFileSync(csvPath, "utf-8");
-  const lines = csvContent.split("\n").map(l => l.trim()).filter(l => l.length > 0);
-  
-  // Skip header
-  const dataLines = lines.slice(1);
-  console.log(`Found ${dataLines.length} questions in CSV. Processing...`);
+  const fileStream = fs.createReadStream(csvPath);
+  const rl = readline.createInterface({
+    input: fileStream,
+    crlfDelay: Infinity
+  });
 
-  const questionsData = [];
-  const optionsData = [];
+  let isFirstLine = true;
+  let batchQuestions = [];
+  let batchOptions = [];
+  let count = 0;
 
-  for (const line of dataLines) {
-    // Expected: Faixa_Etaria;Enunciado;Opcao_A;Opcao_B;Opcao_C;Opcao_D;Resposta_Correta
-    const [ageBand, prompt, optA, optB, optC, optD, correct] = line.split(";");
+  for await (const line of rl) {
+    if (isFirstLine) {
+      isFirstLine = false;
+      continue;
+    }
+
+    const parts = line.split(";");
+    if (parts.length < 7) continue;
+
+    const [ageBand, prompt, optA, optB, optC, optD, correct] = parts;
+    const answerIndex = correct === 'A' ? 0 : correct === 'B' ? 1 : correct === 'C' ? 2 : correct === 'D' ? 3 : 0;
     
-    if (!prompt || !optA) continue; // Skip malformed lines
-
-    // Generate question ID upfront to link options
     const questionId = crypto.randomUUID();
-    
-    questionsData.push({
+    batchQuestions.push({
       id: questionId,
       subjectId: mathSubject.id,
-      ageBand: ageBand,
+      ageBand: ageBand as any,
       prompt: prompt
     });
 
-    // Determine correct option
-    optionsData.push({ questionId, label: optA, isCorrect: correct === "A" });
-    optionsData.push({ questionId, label: optB, isCorrect: correct === "B" });
-    optionsData.push({ questionId, label: optC, isCorrect: correct === "C" });
-    optionsData.push({ questionId, label: optD, isCorrect: correct === "D" });
+    const optionsStr = [optA, optB, optC, optD];
+    optionsStr.forEach((optStr, idx) => {
+      batchOptions.push({
+        id: crypto.randomUUID(),
+        questionId: questionId,
+        label: optStr,
+        isCorrect: idx === answerIndex
+      });
+    });
+
+    count++;
+
+    // Insert in batches of 100 questions to avoid memory/query limits
+    if (batchQuestions.length >= 100) {
+      await db.insert(questions).values(batchQuestions);
+      await db.insert(questionOptions).values(batchOptions);
+      console.log(`Inserted ${count} questions so far...`);
+      batchQuestions = [];
+      batchOptions = [];
+    }
   }
 
-  // Insert in batches
-  const BATCH_SIZE = 500;
-  
-  for (let i = 0; i < questionsData.length; i += BATCH_SIZE) {
-    const qBatch = questionsData.slice(i, i + BATCH_SIZE);
-    await db.insert(schema.questions).values(qBatch);
-    console.log(`Inserted questions ${i + 1} to ${Math.min(i + BATCH_SIZE, questionsData.length)}`);
+  // Insert remaining
+  if (batchQuestions.length > 0) {
+    await db.insert(questions).values(batchQuestions);
+    await db.insert(questionOptions).values(batchOptions);
+    console.log(`Inserted ${count} questions in total!`);
   }
 
-  // Options are 4x the questions, batch them too
-  const OPT_BATCH_SIZE = 2000;
-  for (let i = 0; i < optionsData.length; i += OPT_BATCH_SIZE) {
-    const oBatch = optionsData.slice(i, i + OPT_BATCH_SIZE);
-    await db.insert(schema.questionOptions).values(oBatch);
-    console.log(`Inserted options ${i + 1} to ${Math.min(i + OPT_BATCH_SIZE, optionsData.length)}`);
-  }
-
-  console.log("CSV Seeding complete!");
+  console.log("Done.");
   process.exit(0);
 }
 
-seed().catch((err) => {
-  console.error("Error seeding DB:", err);
-  process.exit(1);
-});
+main().catch(console.error);

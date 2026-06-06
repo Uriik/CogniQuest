@@ -22,7 +22,8 @@ export function useGameSocket() {
   const [enemyRevealed, setEnemyRevealed] = useState<{ x: number; y: number; result: AttackOutcome }[]>([]);
   const [myRevealed, setMyRevealed] = useState<{ x: number; y: number; result: AttackOutcome }[]>([]);
   const [myAnswers, setMyAnswers] = useState(0);
-  const [botAiming, setBotAiming] = useState<{x: number, y: number} | null>(null);
+  const [activeAttack, setActiveAttack] = useState<{x: number, y: number} | null>(null);
+  const [surrendered, setSurrendered] = useState(false);
   const [publicRooms, setPublicRooms] = useState<PublicRoomState[]>([]);
 
   useEffect(() => {
@@ -66,8 +67,13 @@ export function useGameSocket() {
       });
       
       s.on("game:botAiming", (coords) => {
-        setBotAiming(coords);
-        setTimeout(() => setBotAiming(null), 1500);
+        setActiveAttack(coords);
+        setTimeout(() => setActiveAttack(null), 1500);
+      });
+
+      s.on("game:playerAiming", (coords) => {
+        setActiveAttack(coords);
+        setTimeout(() => setActiveAttack(null), 1500);
       });
 
       s.on("game:state", (state: any) => {
@@ -85,7 +91,12 @@ export function useGameSocket() {
         setMyAnswers(myAns || 0);
         setGameState(state);
       });
-      s.on("game:over", ({ winnerId }) => setWinnerId(winnerId));
+      s.on("game:over", ({ winnerId, reason }) => {
+        setWinnerId(winnerId);
+        if (reason === 'abandoned') {
+          setSurrendered(true);
+        }
+      });
       s.on("error", (err) => setError(err));
 
       s.connect();
@@ -122,7 +133,8 @@ export function useGameSocket() {
     answerFeedback,
     enemyRevealed,
     myRevealed,
-    botAiming,
+    activeAttack,
+    surrendered,
     myAnswers,
   };
 }

@@ -275,7 +275,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           selectedOptionId: optionId,
           correctOptionId 
         });
-        await this.executeAttack(roomId, userId, gameState.pendingAttack.x, gameState.pendingAttack.y, gameState, client);
+
+        const attackX = gameState.pendingAttack.x;
+        const attackY = gameState.pendingAttack.y;
+        
+        // Emit missile animation to everyone in the room
+        this.server.to(roomId).emit('game:playerAiming', { x: attackX, y: attackY });
+        
+        // Wait 1.5s for the animation to play before calculating the hit
+        setTimeout(async () => {
+          await this.executeAttack(roomId, userId, attackX, attackY, gameState, client);
+        }, 1500);
       } else {
         gameState.pendingAttack = null;
         const hostId = roomData.hostId;
