@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { loginSchema, verifyPassword, signAccessToken, signRefreshToken, verifyRefreshToken, checkRateLimit, RATE_RULES, RedisKvStore, rateKey } from "@cogniquest/auth";
 import { getDb, users, getRedisClient } from "@cogniquest/db";
-import { eq } from "drizzle-orm";
+import { eq } from "@cogniquest/db";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.AUTH_SECRET,

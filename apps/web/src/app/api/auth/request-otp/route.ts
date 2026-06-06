@@ -13,7 +13,7 @@ import {
 } from "@cogniquest/auth";
 import { sendOtpEmail } from "@cogniquest/auth/mailer";
 import { getDb, users, getRedisClient } from "@cogniquest/db";
-import { eq } from "drizzle-orm";
+import { eq } from "@cogniquest/db";
 
 export const dynamic = "force-dynamic";
 

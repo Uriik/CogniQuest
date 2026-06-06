@@ -10,7 +10,7 @@ import {
   hashPassword,
 } from "@cogniquest/auth";
 import { getDb, users, getRedisClient } from "@cogniquest/db";
-import { eq } from "drizzle-orm";
+import { eq } from "@cogniquest/db";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";

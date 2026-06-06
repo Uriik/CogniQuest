@@ -3,7 +3,7 @@ import { verifyEmailToken } from "@cogniquest/auth";
 
 export const dynamic = "force-dynamic";
 import { getDb, users } from "@cogniquest/db";
-import { eq } from "drizzle-orm";
+import { eq } from "@cogniquest/db";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
