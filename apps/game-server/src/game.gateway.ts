@@ -318,6 +318,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private async executeAttack(roomId: string, userId: string, x: number, y: number, gameState: any, client: Socket) {
+    const gameExists = await redis.exists(`game:${roomId}`);
+    if (!gameExists) return; // Prevent resurrecting an abandoned game during the animation delay
+
     const hostId = await redis.hget(`room:${roomId}`, 'hostId');
     const guestId = await redis.hget(`room:${roomId}`, 'guestId');
     const isHost = gameState.turn === hostId;
