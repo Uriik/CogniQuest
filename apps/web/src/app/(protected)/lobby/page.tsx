@@ -7,16 +7,16 @@ import { useGameSocket } from "../../../hooks/useGameSocket";
 
 export default function LobbyPage() {
   const router = useRouter();
-  const { socket, publicRooms, refreshRooms, isConnected, error } = useGameSocket();
+  const { socket, publicRooms, subscribeLobby, unsubscribeLobby, isConnected, error } = useGameSocket();
   const [inviteCode, setInviteCode] = useState("");
 
-  // Busca a lista de salas públicas ao conectar e atualiza a cada 4s.
+  // Assina para receber as atualizações das salas em tempo real
   useEffect(() => {
     if (!isConnected) return;
-    refreshRooms();
-    const id = setInterval(refreshRooms, 4000);
-    return () => clearInterval(id);
-  }, [isConnected, refreshRooms]);
+    subscribeLobby();
+    
+    return () => unsubscribeLobby();
+  }, [isConnected, subscribeLobby, unsubscribeLobby]);
 
   const handleCreateRoom = () => {
     router.push("/lobby/create");

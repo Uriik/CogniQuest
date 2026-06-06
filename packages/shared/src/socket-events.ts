@@ -102,6 +102,8 @@ export interface ClientToServerEvents {
   "lobby:list": () => void;
   "lobby:get": (p: z.infer<typeof lobbyGetInviteSchema>) => void;
   "lobby:rename": (p: z.infer<typeof lobbyRenameSchema>) => void;
+  "lobby:subscribe": () => void;
+  "lobby:unsubscribe": () => void;
 }
 
 /* ============================ SERVER → CLIENT ============================ */
