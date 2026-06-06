@@ -32,6 +32,8 @@ export const subjects = pgTable("subjects", {
   icon: text("icon").notNull(), // path to SVG in assets/
 });
 
+import { index } from "drizzle-orm/pg-core";
+
 export const questions = pgTable("questions", {
   id: uuid("id").defaultRandom().primaryKey(),
   subjectId: uuid("subject_id")
@@ -42,7 +44,9 @@ export const questions = pgTable("questions", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-});
+}, (table) => ({
+  subjectAgeIdx: index("questions_subject_age_idx").on(table.subjectId, table.ageBand),
+}));
 
 export const questionOptions = pgTable("question_options", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -51,7 +55,9 @@ export const questionOptions = pgTable("question_options", {
     .references(() => questions.id, { onDelete: "cascade" }),
   label: text("label").notNull(),
   isCorrect: boolean("is_correct").notNull(), // server-only, never serialized to client
-});
+}, (table) => ({
+  questionIdIdx: index("question_options_question_id_idx").on(table.questionId),
+}));
 
 export const matches = pgTable("matches", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -68,7 +74,9 @@ export const matches = pgTable("matches", {
   status: text("status").notNull(), // 'finished' | 'abandoned'
   startedAt: timestamp("started_at", { withTimezone: true }),
   finishedAt: timestamp("finished_at", { withTimezone: true }),
-});
+}, (table) => ({
+  statusHostIdx: index("matches_status_host_idx").on(table.status, table.hostId),
+}));
 
 export type User = typeof users.$inferSelect;
 export type Subject = typeof subjects.$inferSelect;

@@ -122,13 +122,16 @@ export interface FleetSummary {
 
 export function fleetSummary(board: PlayerBoard): FleetSummary {
   return {
-    ships: board.ships.map((s) => ({
-      id: s.id,
-      length: s.length,
-      hits: s.hits.length,
-      sunk: s.hits.length === s.length,
-      cells: s.cells
-    })),
+    ships: board.ships.map((s) => {
+      const isSunk = s.hits.length === s.length;
+      return {
+        id: s.id,
+        length: s.length,
+        hits: s.hits.length,
+        sunk: isSunk,
+        cells: isSunk ? s.cells : undefined,
+      };
+    }),
   };
 }
 
