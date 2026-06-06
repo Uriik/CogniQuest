@@ -1,5 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  integrations: [nodeProfilingIntegration()],
+  tracesSampleRate: 1.0,
+  profilesSampleRate: 1.0,
+});
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
