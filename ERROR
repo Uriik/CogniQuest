@@ -1,0 +1,503 @@
+---
+insertId: -dv07xudqfdk
+logName: projects/project-b2576098-0ce4-47a2-bf7/logs/cloudaudit.googleapis.com%2Fsystem_event
+protoPayload:
+  '@type': type.googleapis.com/google.cloud.audit.AuditLog
+  methodName: /Services.ReplaceService
+  resourceName: namespaces/project-b2576098-0ce4-47a2-bf7/revisions/cogniquest-game-server-00004-gl8
+  response:
+    '@type': type.googleapis.com/google.cloud.run.v1.Revision
+    apiVersion: serving.knative.dev/v1
+    kind: Revision
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '3'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 568.0.0
+        run.googleapis.com/operation-id: 9453a928-77cc-4ec2-9bbe-9bdbb1ba4119
+        run.googleapis.com/startup-cpu-boost: 'true'
+        serving.knative.dev/creator: cogniquest@project-b2576098-0ce4-47a2-bf7.iam.gserviceaccount.com
+      creationTimestamp: '2026-06-06T05:13:39.196227Z'
+      generation: 1
+      labels:
+        client.knative.dev/nonce: smrzxeyseu
+        cloud.googleapis.com/location: us-central1
+        commit-sha: a59156c4b681592ccd1989b9b873a50e6f7c87c9
+        managed-by: github-actions
+        run.googleapis.com/startupProbeType: Default
+        serving.knative.dev/configuration: cogniquest-game-server
+        serving.knative.dev/configurationGeneration: '4'
+        serving.knative.dev/route: cogniquest-game-server
+        serving.knative.dev/service: cogniquest-game-server
+        serving.knative.dev/serviceUid: 6ec9a7e5-670c-4006-bf32-35c7f48e04e3
+      name: cogniquest-game-server-00004-gl8
+      namespace: '94747082948'
+      ownerReferences:
+      - apiVersion: serving.knative.dev/v1
+        blockOwnerDeletion: true
+        controller: true
+        kind: Configuration
+        name: cogniquest-game-server
+        uid: b797c6b9-b003-48ad-974e-275fdefc81d0
+      resourceVersion: AAZTjtgqRkI
+      selfLink: /apis/serving.knative.dev/v1/namespaces/94747082948/revisions/cogniquest-game-server-00004-gl8
+      uid: 29acd285-df9e-4a0a-92db-a3439bcfadd8
+    spec:
+      containerConcurrency: 80
+      containers:
+      - image: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:a45a501300b6c5185f8b7f83a11d62716341566da6b227d3b26380afbe4b0662
+        name: cogniquest-game-server-1
+        ports:
+        - containerPort: 8080
+          name: http1
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        startupProbe:
+          failureThreshold: 1
+          periodSeconds: 240
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 240
+      serviceAccountName: 94747082948-compute@developer.gserviceaccount.com
+      timeoutSeconds: 300
+    status:
+      conditions:
+      - lastTransitionTime: '2026-06-06T05:13:57.374530Z'
+        message: |-
+          The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+          Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00004-gl8&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00004-gl8%22 
+          For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+        reason: HealthCheckContainerError
+        status: 'False'
+        type: Ready
+      - lastTransitionTime: '2026-06-06T05:13:57.374530Z'
+        message: |-
+          The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+          Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00004-gl8&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00004-gl8%22 
+          For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+        reason: HealthCheckContainerError
+        status: 'False'
+        type: ContainerHealthy
+      - lastTransitionTime: '2026-06-06T05:13:52.630468Z'
+        message: Container image import completed in 12.73s.
+        status: 'True'
+        type: ContainerReady
+      - lastTransitionTime: '2026-06-06T05:13:54.036955Z'
+        message: Provisioning imported containers completed in 1.4s. Checking container
+          health. This will wait for up to 4m for the configured startup probe, including
+          an initial delay of 0s.
+        status: 'True'
+        type: ResourcesAvailable
+      - lastTransitionTime: '2026-06-06T05:13:54.036955Z'
+        message: System will retry after 00:00 from lastTransitionTime for attempt
+          0.
+        reason: ImmediateRetry
+        severity: Info
+        status: 'True'
+        type: Retry
+      containerStatuses:
+      - imageDigest: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:a45a501300b6c5185f8b7f83a11d62716341566da6b227d3b26380afbe4b0662
+        name: cogniquest-game-server-1
+      imageDigest: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:a45a501300b6c5185f8b7f83a11d62716341566da6b227d3b26380afbe4b0662
+      logUrl: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00004-gl8&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00004-gl8%22
+      observedGeneration: 1
+  serviceName: run.googleapis.com
+  status:
+    code: 9
+    message: |-
+      Ready condition status changed to False for Revision cogniquest-game-server-00004-gl8 with message: The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+      Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00004-gl8&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00004-gl8%22 
+      For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+receiveTimestamp: '2026-06-06T05:13:57.997158076Z'
+resource:
+  labels:
+    configuration_name: cogniquest-game-server
+    location: us-central1
+    project_id: project-b2576098-0ce4-47a2-bf7
+    revision_name: cogniquest-game-server-00004-gl8
+    service_name: cogniquest-game-server
+  type: cloud_run_revision
+severity: ERROR
+timestamp: '2026-06-06T05:13:57.383574Z'
+---
+insertId: -z7ou8odvczq
+logName: projects/project-b2576098-0ce4-47a2-bf7/logs/cloudaudit.googleapis.com%2Fsystem_event
+protoPayload:
+  '@type': type.googleapis.com/google.cloud.audit.AuditLog
+  methodName: /Services.ReplaceService
+  resourceName: namespaces/project-b2576098-0ce4-47a2-bf7/revisions/cogniquest-game-server-00003-xkp
+  response:
+    '@type': type.googleapis.com/google.cloud.run.v1.Revision
+    apiVersion: serving.knative.dev/v1
+    kind: Revision
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '3'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 568.0.0
+        run.googleapis.com/operation-id: b89b78b7-9bd4-4106-be2b-49fb482c748c
+        run.googleapis.com/startup-cpu-boost: 'true'
+        serving.knative.dev/creator: cogniquest@project-b2576098-0ce4-47a2-bf7.iam.gserviceaccount.com
+      creationTimestamp: '2026-06-06T04:56:50.896826Z'
+      generation: 1
+      labels:
+        client.knative.dev/nonce: gekjkvxohv
+        cloud.googleapis.com/location: us-central1
+        commit-sha: 1ce266ea41c6f345e25716c86ce95217e2d9844c
+        managed-by: github-actions
+        run.googleapis.com/startupProbeType: Default
+        serving.knative.dev/configuration: cogniquest-game-server
+        serving.knative.dev/configurationGeneration: '3'
+        serving.knative.dev/route: cogniquest-game-server
+        serving.knative.dev/service: cogniquest-game-server
+        serving.knative.dev/serviceUid: 6ec9a7e5-670c-4006-bf32-35c7f48e04e3
+      name: cogniquest-game-server-00003-xkp
+      namespace: '94747082948'
+      ownerReferences:
+      - apiVersion: serving.knative.dev/v1
+        blockOwnerDeletion: true
+        controller: true
+        kind: Configuration
+        name: cogniquest-game-server
+        uid: b797c6b9-b003-48ad-974e-275fdefc81d0
+      resourceVersion: AAZTjpv4iXA
+      selfLink: /apis/serving.knative.dev/v1/namespaces/94747082948/revisions/cogniquest-game-server-00003-xkp
+      uid: 13aaa0a4-0c54-475c-9b1e-7ff7746427fc
+    spec:
+      containerConcurrency: 80
+      containers:
+      - image: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:ab275ff053233a8e92d432229d003ffb29dcb6bacd1f98a5f0068bcc11ddeffd
+        name: cogniquest-game-server-1
+        ports:
+        - containerPort: 8080
+          name: http1
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        startupProbe:
+          failureThreshold: 1
+          periodSeconds: 240
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 240
+      serviceAccountName: 94747082948-compute@developer.gserviceaccount.com
+      timeoutSeconds: 300
+    status:
+      conditions:
+      - lastTransitionTime: '2026-06-06T04:57:07.481968Z'
+        message: |-
+          The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+          Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00003-xkp&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00003-xkp%22 
+          For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+        reason: HealthCheckContainerError
+        status: 'False'
+        type: Ready
+      - lastTransitionTime: '2026-06-06T04:57:07.481968Z'
+        message: |-
+          The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+          Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00003-xkp&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00003-xkp%22 
+          For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+        reason: HealthCheckContainerError
+        status: 'False'
+        type: ContainerHealthy
+      - lastTransitionTime: '2026-06-06T04:57:01.850940Z'
+        message: Container image import completed in 10.32s.
+        status: 'True'
+        type: ContainerReady
+      - lastTransitionTime: '2026-06-06T04:57:04.367351Z'
+        message: Provisioning imported containers completed in 2.51s. Checking container
+          health. This will wait for up to 4m for the configured startup probe, including
+          an initial delay of 0s.
+        status: 'True'
+        type: ResourcesAvailable
+      - lastTransitionTime: '2026-06-06T04:57:04.367351Z'
+        message: System will retry after 00:00 from lastTransitionTime for attempt
+          0.
+        reason: ImmediateRetry
+        severity: Info
+        status: 'True'
+        type: Retry
+      containerStatuses:
+      - imageDigest: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:ab275ff053233a8e92d432229d003ffb29dcb6bacd1f98a5f0068bcc11ddeffd
+        name: cogniquest-game-server-1
+      imageDigest: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:ab275ff053233a8e92d432229d003ffb29dcb6bacd1f98a5f0068bcc11ddeffd
+      logUrl: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00003-xkp&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00003-xkp%22
+      observedGeneration: 1
+  serviceName: run.googleapis.com
+  status:
+    code: 9
+    message: |-
+      Ready condition status changed to False for Revision cogniquest-game-server-00003-xkp with message: The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+      Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00003-xkp&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00003-xkp%22 
+      For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+receiveTimestamp: '2026-06-06T04:57:07.608223060Z'
+resource:
+  labels:
+    configuration_name: cogniquest-game-server
+    location: us-central1
+    project_id: project-b2576098-0ce4-47a2-bf7
+    revision_name: cogniquest-game-server-00003-xkp
+    service_name: cogniquest-game-server
+  type: cloud_run_revision
+severity: ERROR
+timestamp: '2026-06-06T04:57:07.494669Z'
+---
+insertId: -f8p7shdtb5o
+logName: projects/project-b2576098-0ce4-47a2-bf7/logs/cloudaudit.googleapis.com%2Fsystem_event
+protoPayload:
+  '@type': type.googleapis.com/google.cloud.audit.AuditLog
+  methodName: /Services.ReplaceService
+  resourceName: namespaces/project-b2576098-0ce4-47a2-bf7/revisions/cogniquest-game-server-00002-w2n
+  response:
+    '@type': type.googleapis.com/google.cloud.run.v1.Revision
+    apiVersion: serving.knative.dev/v1
+    kind: Revision
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '3'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 568.0.0
+        run.googleapis.com/operation-id: 278d8d19-9861-4bbd-bb70-fb3c23044523
+        run.googleapis.com/startup-cpu-boost: 'true'
+        serving.knative.dev/creator: cogniquest@project-b2576098-0ce4-47a2-bf7.iam.gserviceaccount.com
+      creationTimestamp: '2026-06-06T04:50:52.106041Z'
+      generation: 1
+      labels:
+        client.knative.dev/nonce: liadbdvxdg
+        cloud.googleapis.com/location: us-central1
+        commit-sha: 739a3e8f9e1d91242b4e478f20323f5fb7b79c04
+        managed-by: github-actions
+        run.googleapis.com/startupProbeType: Default
+        serving.knative.dev/configuration: cogniquest-game-server
+        serving.knative.dev/configurationGeneration: '2'
+        serving.knative.dev/route: cogniquest-game-server
+        serving.knative.dev/service: cogniquest-game-server
+        serving.knative.dev/serviceUid: 6ec9a7e5-670c-4006-bf32-35c7f48e04e3
+      name: cogniquest-game-server-00002-w2n
+      namespace: '94747082948'
+      ownerReferences:
+      - apiVersion: serving.knative.dev/v1
+        blockOwnerDeletion: true
+        controller: true
+        kind: Configuration
+        name: cogniquest-game-server
+        uid: b797c6b9-b003-48ad-974e-275fdefc81d0
+      resourceVersion: AAZTjoar9ic
+      selfLink: /apis/serving.knative.dev/v1/namespaces/94747082948/revisions/cogniquest-game-server-00002-w2n
+      uid: 98bd925e-2526-4009-b57d-2cdcc8b02b7e
+    spec:
+      containerConcurrency: 80
+      containers:
+      - image: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:9e7b278274f6af9d6371ff6c8b3962338be041be928d50918fb5eb01b28a6b40
+        name: cogniquest-game-server-1
+        ports:
+        - containerPort: 8080
+          name: http1
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        startupProbe:
+          failureThreshold: 1
+          periodSeconds: 240
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 240
+      serviceAccountName: 94747082948-compute@developer.gserviceaccount.com
+      timeoutSeconds: 300
+    status:
+      conditions:
+      - lastTransitionTime: '2026-06-06T04:51:10.141991Z'
+        message: |-
+          The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+          Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00002-w2n&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00002-w2n%22 
+          For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+        reason: HealthCheckContainerError
+        status: 'False'
+        type: Ready
+      - lastTransitionTime: '2026-06-06T04:51:10.141991Z'
+        message: |-
+          The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+          Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00002-w2n&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00002-w2n%22 
+          For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+        reason: HealthCheckContainerError
+        status: 'False'
+        type: ContainerHealthy
+      - lastTransitionTime: '2026-06-06T04:51:06.367992Z'
+        message: Container image import completed in 13.64s.
+        status: 'True'
+        type: ContainerReady
+      - lastTransitionTime: '2026-06-06T04:51:07.795019Z'
+        message: Provisioning imported containers completed in 1.43s. Checking container
+          health. This will wait for up to 4m for the configured startup probe, including
+          an initial delay of 0s.
+        status: 'True'
+        type: ResourcesAvailable
+      - lastTransitionTime: '2026-06-06T04:51:07.795019Z'
+        message: System will retry after 00:00 from lastTransitionTime for attempt
+          0.
+        reason: ImmediateRetry
+        severity: Info
+        status: 'True'
+        type: Retry
+      containerStatuses:
+      - imageDigest: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:9e7b278274f6af9d6371ff6c8b3962338be041be928d50918fb5eb01b28a6b40
+        name: cogniquest-game-server-1
+      imageDigest: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:9e7b278274f6af9d6371ff6c8b3962338be041be928d50918fb5eb01b28a6b40
+      logUrl: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00002-w2n&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00002-w2n%22
+      observedGeneration: 1
+  serviceName: run.googleapis.com
+  status:
+    code: 9
+    message: |-
+      Ready condition status changed to False for Revision cogniquest-game-server-00002-w2n with message: The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+      Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00002-w2n&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00002-w2n%22 
+      For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+receiveTimestamp: '2026-06-06T04:51:10.254859181Z'
+resource:
+  labels:
+    configuration_name: cogniquest-game-server
+    location: us-central1
+    project_id: project-b2576098-0ce4-47a2-bf7
+    revision_name: cogniquest-game-server-00002-w2n
+    service_name: cogniquest-game-server
+  type: cloud_run_revision
+severity: ERROR
+timestamp: '2026-06-06T04:51:10.150463Z'
+---
+insertId: 8w44j0dr4p0
+logName: projects/project-b2576098-0ce4-47a2-bf7/logs/cloudaudit.googleapis.com%2Fsystem_event
+protoPayload:
+  '@type': type.googleapis.com/google.cloud.audit.AuditLog
+  methodName: /Services.CreateService
+  resourceName: namespaces/project-b2576098-0ce4-47a2-bf7/revisions/cogniquest-game-server-00001-bvs
+  response:
+    '@type': type.googleapis.com/google.cloud.run.v1.Revision
+    apiVersion: serving.knative.dev/v1
+    kind: Revision
+    metadata:
+      annotations:
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 568.0.0
+        run.googleapis.com/operation-id: aa392f72-2851-4867-8cb0-bab01c8aaed0
+        run.googleapis.com/startup-cpu-boost: 'true'
+        serving.knative.dev/creator: cogniquest@project-b2576098-0ce4-47a2-bf7.iam.gserviceaccount.com
+      creationTimestamp: '2026-06-06T04:44:54.149745Z'
+      generation: 1
+      labels:
+        client.knative.dev/nonce: llkrapogmm
+        cloud.googleapis.com/location: us-central1
+        commit-sha: 80f40516b5a324895bbf157d2cd47ba1808945ad
+        managed-by: github-actions
+        run.googleapis.com/startupProbeType: Default
+        serving.knative.dev/configuration: cogniquest-game-server
+        serving.knative.dev/configurationGeneration: '1'
+        serving.knative.dev/route: cogniquest-game-server
+        serving.knative.dev/service: cogniquest-game-server
+        serving.knative.dev/serviceUid: 6ec9a7e5-670c-4006-bf32-35c7f48e04e3
+      name: cogniquest-game-server-00001-bvs
+      namespace: '94747082948'
+      ownerReferences:
+      - apiVersion: serving.knative.dev/v1
+        blockOwnerDeletion: true
+        controller: true
+        kind: Configuration
+        name: cogniquest-game-server
+        uid: b797c6b9-b003-48ad-974e-275fdefc81d0
+      resourceVersion: AAZTjnFl2JY
+      selfLink: /apis/serving.knative.dev/v1/namespaces/94747082948/revisions/cogniquest-game-server-00001-bvs
+      uid: 7393b3df-9c28-4691-be97-f9cc58d9ae6b
+    spec:
+      containerConcurrency: 80
+      containers:
+      - image: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:2c3ed6c53a4e85540652808eb72ec0ad8a2bbe8f0b673d03405eb88419c1c1cf
+        name: cogniquest-game-server-1
+        ports:
+        - containerPort: 8080
+          name: http1
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        startupProbe:
+          failureThreshold: 1
+          periodSeconds: 240
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 240
+      serviceAccountName: 94747082948-compute@developer.gserviceaccount.com
+      timeoutSeconds: 300
+    status:
+      conditions:
+      - lastTransitionTime: '2026-06-06T04:45:13.225366Z'
+        message: |-
+          The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+          Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00001-bvs&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00001-bvs%22 
+          For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+        reason: HealthCheckContainerError
+        status: 'False'
+        type: Ready
+      - lastTransitionTime: '2026-06-06T04:45:13.225366Z'
+        message: |-
+          The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+          Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00001-bvs&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00001-bvs%22 
+          For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+        reason: HealthCheckContainerError
+        status: 'False'
+        type: ContainerHealthy
+      - lastTransitionTime: '2026-06-06T04:45:07.456394Z'
+        message: Container image import completed in 12.63s.
+        status: 'True'
+        type: ContainerReady
+      - lastTransitionTime: '2026-06-06T04:45:08.798808Z'
+        message: Provisioning imported containers completed in 1.34s. Checking container
+          health. This will wait for up to 4m for the configured startup probe, including
+          an initial delay of 0s.
+        status: 'True'
+        type: ResourcesAvailable
+      - lastTransitionTime: '2026-06-06T04:45:08.798808Z'
+        message: System will retry after 00:00 from lastTransitionTime for attempt
+          0.
+        reason: ImmediateRetry
+        severity: Info
+        status: 'True'
+        type: Retry
+      containerStatuses:
+      - imageDigest: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:2c3ed6c53a4e85540652808eb72ec0ad8a2bbe8f0b673d03405eb88419c1c1cf
+        name: cogniquest-game-server-1
+      imageDigest: us-central1-docker.pkg.dev/project-b2576098-0ce4-47a2-bf7/repo/cogniquest-game-server@sha256:2c3ed6c53a4e85540652808eb72ec0ad8a2bbe8f0b673d03405eb88419c1c1cf
+      logUrl: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00001-bvs&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00001-bvs%22
+      observedGeneration: 1
+  serviceName: run.googleapis.com
+  status:
+    code: 9
+    message: |-
+      Ready condition status changed to False for Revision cogniquest-game-server-00001-bvs with message: The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+      Logs URL: https://console.cloud.google.com/logs/viewer?project=project-b2576098-0ce4-47a2-bf7&resource=cloud_run_revision/service_name/cogniquest-game-server/revision_name/cogniquest-game-server-00001-bvs&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22cogniquest-game-server%22%0Aresource.labels.revision_name%3D%22cogniquest-game-server-00001-bvs%22 
+      For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+receiveTimestamp: '2026-06-06T04:45:13.593303003Z'
+resource:
+  labels:
+    configuration_name: cogniquest-game-server
+    location: us-central1
+    project_id: project-b2576098-0ce4-47a2-bf7
+    revision_name: cogniquest-game-server-00001-bvs
+    service_name: cogniquest-game-server
+  type: cloud_run_revision
+severity: ERROR
+timestamp: '2026-06-06T04:45:13.238274Z'
