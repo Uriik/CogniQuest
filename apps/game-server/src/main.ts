@@ -14,6 +14,7 @@ import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import Redis from 'ioredis';
 import { verifyAccessToken } from '@cogniquest/auth';
+import { encryptPayload, decryptPayload } from '@cogniquest/shared';
 
 export class AuthenticatedIoAdapter extends IoAdapter {
   private adapterConstructor: ReturnType<typeof createAdapter>;
@@ -56,11 +57,34 @@ export class AuthenticatedIoAdapter extends IoAdapter {
         });
         
         socket.data.userId = claims.sub;
+
+        // --- Monkey-patch Emit for outgoing E2EE encryption ---
+        const originalEmit = socket.emit;
+        socket.emit = function (this: any, event: string, ...args: any[]) {
+          const encryptedArgs = args.map(arg => encryptPayload(arg));
+          return originalEmit.call(this, event, ...encryptedArgs);
+        } as any;
+        // ------------------------------------------------------
+
         next();
       } catch (err) {
         next(new Error('Authentication error: Invalid token'));
       }
     });
+
+    // --- Middleware for incoming E2EE decryption ---
+    server.on('connection', (socket) => {
+      socket.use((packet, next) => {
+        // packet is an array: [eventName, ...args]
+        if (packet && packet.length > 1) {
+          for (let i = 1; i < packet.length; i++) {
+            packet[i] = decryptPayload(packet[i]);
+          }
+        }
+        next();
+      });
+    });
+    // -----------------------------------------------
 
     return server;
   }
