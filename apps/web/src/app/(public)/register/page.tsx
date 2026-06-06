@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Turnstile } from "@marsidev/react-turnstile";
+import apiClient from "@/lib/axios";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -29,33 +30,27 @@ export default function RegisterPage() {
     }
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          displayName,
-          ageBand: ageBand || undefined,
-          turnstileToken,
-        }),
+      const res = await apiClient.post("/api/auth/register", {
+        email,
+        password,
+        displayName,
+        ageBand: ageBand || undefined,
+        turnstileToken,
       });
 
-      const data = await res.json();
+      const data = res.data;
 
-      if (!res.ok) {
-        if (data.error === "Email in use") {
-          setError("Este e-mail já está em uso.");
-        } else if (data.error === "Invalid input") {
-          setError("Dados inválidos. A senha precisa de no mínimo 8 caracteres, com letras e números.");
-        } else {
-          setError(data.error || "Ocorreu um erro no cadastro.");
-        }
+      // Axios throws on non-2xx status codes, so this block runs on success
+      setSuccess(true);
+    } catch (err: any) {
+      const errorData = err.response?.data || {};
+      if (errorData.error === "Email in use") {
+        setError("Este e-mail já está em uso.");
+      } else if (errorData.error === "Invalid input") {
+        setError("Dados inválidos. A senha precisa de no mínimo 8 caracteres, com letras e números.");
       } else {
-        setSuccess(true);
+        setError(errorData.error || "Ocorreu um erro no cadastro.");
       }
-    } catch (err) {
-      setError("Erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
     }

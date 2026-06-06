@@ -1,5 +1,6 @@
 import { io, Socket } from "socket.io-client";
-import { ClientToServerEvents, ServerToClientEvents } from "@cogniquest/shared";
+import { ClientToServerEvents, ServerToClientEvents, encryptPayload, decryptPayload } from "@cogniquest/shared";
+import apiClient from "./axios";
 
 // Utilize specific socket type for strongly typed events
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -18,8 +19,8 @@ async function resolveGameServerUrl(): Promise<string> {
 
   // 2. Try fetching from our API config endpoint
   try {
-    const res = await fetch("/api/config");
-    const data = await res.json();
+    const res = await apiClient.get("/api/config");
+    const data = res.data;
     if (data.gameServerUrl) {
       _gameServerUrl = data.gameServerUrl;
       return _gameServerUrl!;
@@ -42,6 +43,23 @@ export const getSocket = (token?: string): GameSocket => {
       withCredentials: true,
       auth: token ? { token } : undefined,
     });
+
+    // --- Monkey-patch for E2EE (Application-Layer Encryption) ---
+    const originalEmit = socket.emit;
+    socket.emit = function (this: any, event: string, ...args: any[]) {
+      const encryptedArgs = args.map(arg => encryptPayload(arg));
+      return (originalEmit as any).call(this, event, ...encryptedArgs);
+    } as any;
+
+    const originalOn = socket.on;
+    socket.on = function (this: any, event: string, listener: (...args: any[]) => void) {
+      return (originalOn as any).call(this, event, (...args: any[]) => {
+        const decryptedArgs = args.map(arg => decryptPayload(arg));
+        listener(...decryptedArgs);
+      });
+    } as any;
+    // ------------------------------------------------------------
+
   } else if (token) {
     socket.auth = { token };
   }
