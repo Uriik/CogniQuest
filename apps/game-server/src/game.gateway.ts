@@ -7,6 +7,8 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { UseGuards } from '@nestjs/common';
+import { WsThrottlerGuard } from './common/guards/ws-throttler.guard';
 import { Server, Socket } from 'socket.io';
 import { gameReadySchema, gameAnswerSchema, gameAttackIntentSchema, gameAttackSchema, gameUseHintSchema, PublicGameState, toPublicRoomState } from '@cogniquest/shared';
 import { checkRateLimit, RATE_RULES, RedisKvStore, rateKey } from '@cogniquest/auth';
@@ -19,6 +21,7 @@ const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 redis.on('error', (err) => console.error('Redis Error:', err.message));
 
 @WebSocketGateway({ cors: { origin: process.env.WEB_CLIENT_URL || 'http://localhost:3000', credentials: true } })
+@UseGuards(WsThrottlerGuard)
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;

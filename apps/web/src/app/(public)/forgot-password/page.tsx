@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Turnstile } from "@marsidev/react-turnstile";
+import apiClient from "@/lib/axios";
 
 type Step = "request" | "reset";
 
@@ -30,24 +31,17 @@ export default function ForgotPasswordPage() {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/request-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, turnstileToken }),
-      });
-      if (res.status === 429) {
+      const res = await apiClient.post("/api/auth/request-otp", { email, turnstileToken });
+      
+      setStep("reset");
+      setInfo(`Enviamos um código de 6 dígitos para ${email}. Verifique sua caixa de entrada.`);
+    } catch (err: any) {
+      if (err.response?.status === 429) {
         setError("Muitas tentativas. Aguarde um momento.");
         return;
       }
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        setError(j.error ?? "Não foi possível enviar o código.");
-        return;
-      }
-      setStep("reset");
-      setInfo(`Enviamos um código de 6 dígitos para ${email}. Verifique sua caixa de entrada.`);
-    } catch {
-      setError("Erro inesperado. Tente novamente.");
+      const errorData = err.response?.data || {};
+      setError(errorData.error ?? "Não foi possível enviar o código.");
     } finally {
       setLoading(false);
     }
@@ -60,20 +54,12 @@ export default function ForgotPasswordPage() {
     setInfo("");
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp, newPassword }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        setError(j.error ?? "Não foi possível redefinir a senha.");
-        return;
-      }
+      await apiClient.post("/api/auth/reset-password", { email, otp, newPassword });
       
       router.push("/login?reset=success");
-    } catch {
-      setError("Erro inesperado. Tente novamente.");
+    } catch (err: any) {
+      const errorData = err.response?.data || {};
+      setError(errorData.error ?? "Não foi possível redefinir a senha.");
     } finally {
       setLoading(false);
     }
