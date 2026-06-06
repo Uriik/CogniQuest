@@ -19,6 +19,7 @@ RUN pnpm install --frozen-lockfile
 # Build the project
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
+COPY tsconfig.base.json tsconfig.base.json
 RUN pnpm turbo run build --filter=@cogniquest/game-server...
 
 # 3. Production image

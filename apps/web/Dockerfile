@@ -21,6 +21,7 @@ RUN pnpm install --frozen-lockfile
 # Build the project
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
+COPY tsconfig.base.json tsconfig.base.json
 # Run build
 RUN pnpm turbo run build --filter=@cogniquest/web...
 
