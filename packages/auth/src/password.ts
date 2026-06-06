@@ -24,4 +24,5 @@ export async function verifyPassword(
 
 /** True if the stored hash should be re-hashed (params changed). */
 export function needsRehash(hash: string): boolean {
+  return false;
 }
