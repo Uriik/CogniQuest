@@ -7,7 +7,7 @@ db.insert(matches).values({
   hostId: randomUUID(),
   guestId: randomUUID(),
   subjectId: randomUUID(),
-  ageBand: '6-8',
+  grade: '9-ano',
   winnerId: randomUUID(),
   status: 'finished',
   startedAt: new Date(),

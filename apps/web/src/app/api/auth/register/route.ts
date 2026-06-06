@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid input", details: parsed.error }, { status: 400 });
     }
 
-    const { email, password, displayName, ageBand, turnstileToken } = parsed.data;
+    const { email, password, displayName, grade, turnstileToken } = parsed.data;
 
     const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
     const redis = getRedisClient();
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       email,
       passwordHash: hashedPassword,
       displayName,
-      ageBand: ageBand ?? null,
+      grade: grade ?? null,
       emailVerifiedAt: new Date(),
     }).returning();
 

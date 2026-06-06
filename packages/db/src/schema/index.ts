@@ -17,7 +17,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(), // Argon2id
   displayName: text("display_name").notNull(),
-  ageBand: text("age_band"), // '6-8' | '9-11' | '12-14' | '15+'
+  grade: text("grade"), // '6-ano' | '7-ano' | ... | '3-em'
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
@@ -39,13 +39,13 @@ export const questions = pgTable("questions", {
   subjectId: uuid("subject_id")
     .notNull()
     .references(() => subjects.id, { onDelete: "cascade" }),
-  ageBand: text("age_band").notNull(), // '6-8' | '9-11' | '12-14' | '15+'
+  grade: text("grade").notNull(), // '6-ano' | '7-ano' | ... | '3-em'
   prompt: text("prompt").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
 }, (table) => ({
-  subjectAgeIdx: index("questions_subject_age_idx").on(table.subjectId, table.ageBand),
+  subjectGradeIdx: index("questions_subject_grade_idx").on(table.subjectId, table.grade),
 }));
 
 export const questionOptions = pgTable("question_options", {
@@ -69,7 +69,7 @@ export const matches = pgTable("matches", {
   subjectId: uuid("subject_id")
     .notNull()
     .references(() => subjects.id),
-  ageBand: text("age_band").notNull(),
+  grade: text("grade").notNull(),
   winnerId: uuid("winner_id").references(() => users.id),
   status: text("status").notNull(), // 'finished' | 'abandoned'
   startedAt: timestamp("started_at", { withTimezone: true }),

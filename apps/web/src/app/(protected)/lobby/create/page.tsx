@@ -16,7 +16,7 @@ const SUBJECTS = [
   { slug: "geography", name: "Geografia", icon: "/icon_geography.svg" },
 ] as const;
 
-const AGE_BANDS = ["6-8", "9-11", "12-14", "15+"] as const;
+import { GRADES, GRADE_LABELS } from "@cogniquest/shared";
 
 type Mode = "solo" | "duo";
 
@@ -24,7 +24,7 @@ export default function CreateRoomPage() {
   const router = useRouter();
   const { socket } = useGameSocket();
   const [subject, setSubject] = useState<string>("math");
-  const [ageBand, setAgeBand] = useState<(typeof AGE_BANDS)[number]>("9-11");
+  const [grade, setGrade] = useState<(typeof GRADES)[number]>("9-ano");
   const [mode, setMode] = useState<Mode>("duo");
   const [isPublic, setIsPublic] = useState(true);
   const [password, setPassword] = useState("");
@@ -53,7 +53,7 @@ export default function CreateRoomPage() {
 
     socket.emit("lobby:create", {
       subjectSlug: subject,
-      ageBand,
+      grade,
       name: roomName.trim() || undefined,
       // Solo rooms are always private.
       isPublic: mode === "solo" ? false : isPublic,
@@ -119,17 +119,17 @@ export default function CreateRoomPage() {
             </div>
           </div>
 
-          {/* Faixa etária */}
+          {/* Série Escolar */}
           <div className="setup-group">
-            <label className="setup-label">Faixa Etária (Dificuldade)</label>
+            <label className="setup-label">Série Escolar (Dificuldade)</label>
             <div className="setup-age-selector">
-              {AGE_BANDS.map((b) => (
+              {GRADES.map((b) => (
                 <button
                   key={b}
-                  className={`setup-age-btn ${ageBand === b ? "active" : ""}`}
-                  onClick={() => setAgeBand(b)}
+                  className={`setup-age-btn ${grade === b ? "active" : ""}`}
+                  onClick={() => setGrade(b)}
                 >
-                  {b === "15+" ? "15+ anos" : `${b} anos`}
+                  {GRADE_LABELS[b]}
                 </button>
               ))}
             </div>

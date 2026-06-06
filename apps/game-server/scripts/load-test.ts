@@ -19,7 +19,7 @@ async function runLoadTest() {
       client.on("connect", () => {
         connectedCount++;
         // Attempt to create a room
-        client.emit("lobby:create", { subjectSlug: 'matematica', ageBand: '18+', isPublic: true });
+        client.emit("lobby:create", { subjectSlug: 'matematica', grade: '3-em', isPublic: true });
       });
 
       client.on("lobby:created", () => {

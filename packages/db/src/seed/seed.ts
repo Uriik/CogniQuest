@@ -44,7 +44,7 @@ async function main() {
     }
     const [row] = await db
       .insert(questions)
-      .values({ subjectId, ageBand: q.ageBand, prompt: q.prompt })
+      .values({ subjectId, grade: q.grade, prompt: q.prompt })
       .returning();
     if (!row) continue;
     await db.insert(questionOptions).values(

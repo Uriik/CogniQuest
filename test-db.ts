@@ -9,7 +9,7 @@ async function check() {
   const q = await db.select({ prompt: questions.prompt })
     .from(questions)
     .innerJoin(subjects, eq(questions.subjectId, subjects.id))
-    .where(and(eq(subjects.slug, 'math'), eq(questions.ageBand, '9-11')));
+    .where(and(eq(subjects.slug, 'math'), eq(questions.grade, '9-ano')));
   
   console.log("=== PERGUNTAS NO BANCO DE DADOS SUPABASE PARA MATH 9-11 ===");
   console.log(`TOTAL: ${q.length}`);

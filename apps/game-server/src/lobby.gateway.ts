@@ -101,7 +101,7 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
         guestId: isSolo ? 'AI' : '',
         guestName: isSolo ? 'Máquina' : '',
         subjectSlug: parsed.subjectSlug,
-        ageBand: parsed.ageBand,
+        grade: parsed.grade,
         // Solo is immediately ready to start (no second human needed).
         status: isSolo ? 'ready' : 'open',
         isPublic: isSolo ? false : parsed.isPublic,

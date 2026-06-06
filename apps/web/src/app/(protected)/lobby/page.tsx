@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PublicRoomState } from "@cogniquest/shared";
+import { PublicRoomState, gradeSchema, GRADE_LABELS } from "@cogniquest/shared";
 import { useGameSocket } from "../../../hooks/useGameSocket";
 
 export default function LobbyPage() {
@@ -90,7 +90,7 @@ export default function LobbyPage() {
               <div className="room-card-body">
                 <div className="room-settings-badge mt-4">
                   <span className="setting-tag">{room.subjectSlug}</span>
-                  <span className="setting-tag">{room.ageBand} anos</span>
+                  <span className="setting-tag">{room.grade && (GRADE_LABELS as Record<string,string>)[room.grade] ? (GRADE_LABELS as Record<string,string>)[room.grade] : room.grade}</span>
                   {!room.isPublic && <span className="setting-tag">🔒 Privada</span>}
                 </div>
               </div>
