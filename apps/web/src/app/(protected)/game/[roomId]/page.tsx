@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useGameSocket } from "../../../../hooks/useGameSocket";
 import { RadarPanel } from "../../../../components/game/RadarPanel";
@@ -31,6 +31,10 @@ export default function GamePage({ params }: { params: { roomId: string } }) {
 
   const [isSetupDone, setIsSetupDone] = useState(false);
   const [turnAnnouncement, setTurnAnnouncement] = useState<string | null>(null);
+  // Último turno JÁ anunciado. Evita re-anúncio do mesmo turno e o flicker
+  // "SUA VEZ" -> "TURNO DO INIMIGO" causado por timers de feedback rodando com
+  // o turno ainda defasado no cliente (antes do game:state chegar).
+  const lastAnnouncedTurnRef = useRef<string | null>(null);
 
   // Removido o auto game:ready. O SetupBoard agora emite o game:ready.
   useEffect(() => {
@@ -40,15 +44,27 @@ export default function GamePage({ params }: { params: { roomId: string } }) {
   }, [roomState?.status]);
 
   useEffect(() => {
-    if (roomState?.status !== 'in_game' || !gameState) return;
-    // Não anuncia o turno enquanto a pergunta ou o feedback ainda estão na tela.
-    // Evita o "TURNO DO INIMIGO" surgir por cima do modal ainda aberto; o anúncio
-    // aparece logo após o modal fechar (currentQuestion/answerFeedback limpam).
+    if (roomState?.status !== 'in_game' || !gameState?.turn) return;
+    // Adia o anúncio enquanto a pergunta/feedback estão na tela (não pinta sob o
+    // modal). Quando o modal fecha, o efeito roda de novo e anuncia — mas só se o
+    // turno mudou de verdade.
     if (currentQuestion || answerFeedback) return;
+    // Núcleo do fix: anuncia SOMENTE quando o turno muda em relação ao último
+    // anunciado. Se o feedback fechar antes do game:state chegar, o turno ainda
+    // é o "meu" (== último anunciado) → não re-anuncia "SUA VEZ". Quando o turno
+    // realmente vira, anuncia "TURNO DO INIMIGO" uma única vez.
+    if (gameState.turn === lastAnnouncedTurnRef.current) return;
+    lastAnnouncedTurnRef.current = gameState.turn;
     setTurnAnnouncement(isMyTurn ? "SUA VEZ" : "TURNO DO INIMIGO");
-    const t = setTimeout(() => setTurnAnnouncement(null), 2000);
+    const t = setTimeout(() => setTurnAnnouncement(null), 1500);
     return () => clearTimeout(t);
   }, [isMyTurn, roomState?.status, gameState?.turn, currentQuestion, answerFeedback]);
+
+  // Some com o banner assim que um ataque começa a animar, para não cobrir o
+  // torpedo/explosão no tabuleiro (resolve o "turno + ataque" sobrepostos).
+  useEffect(() => {
+    if (activeAttack) setTurnAnnouncement(null);
+  }, [activeAttack]);
 
   // Sincroniza o estado da sala ao montar (o socket é singleton e o
   // lobby:updated inicial já foi consumido na página anterior). Sem isso, o
