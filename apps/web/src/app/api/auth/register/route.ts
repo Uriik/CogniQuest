@@ -67,7 +67,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (isMinor && guardianEmail.toLowerCase() === email.toLowerCase()) {
+    if (isMinor && guardianEmail?.toLowerCase() === email.toLowerCase()) {
       return NextResponse.json(
         { error: "O e-mail do responsável não pode ser igual ao seu próprio e-mail." },
         { status: 400 }
