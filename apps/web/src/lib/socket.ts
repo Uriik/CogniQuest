@@ -5,6 +5,44 @@ import apiClient from "./axios";
 // Utilize specific socket type for strongly typed events
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
+function applyE2EEPatch(sock: GameSocket) {
+  // Prevent patching twice
+  if ((sock as any).__e2ee_patched) return;
+  (sock as any).__e2ee_patched = true;
+
+  const originalEmit = sock.emit;
+  sock.emit = function (this: any, event: string, ...args: any[]) {
+    const encryptedArgs = args.map(arg => encryptPayload(arg));
+    return (originalEmit as any).call(this, event, ...encryptedArgs);
+  } as any;
+
+  const originalOn = sock.on;
+  const originalOff = sock.off;
+  const originalRemoveListener = sock.removeListener;
+
+  sock.on = function (this: any, event: string, listener: (...args: any[]) => void) {
+    const wrapper = function(this: any, ...args: any[]) {
+      try {
+        const decryptedArgs = args.map(arg => decryptPayload(arg));
+        listener.apply(this, decryptedArgs);
+      } catch (err) {
+        console.error(`Socket.on(${event}) E2EE decryption failed:`, err);
+      }
+    };
+    (listener as any).__e2ee_wrapper = wrapper;
+    return (originalOn as any).call(this, event, wrapper);
+  } as any;
+
+  sock.off = function (this: any, event: string, listener?: (...args: any[]) => void) {
+    if (listener && (listener as any).__e2ee_wrapper) {
+      return (originalOff as any).call(this, event, (listener as any).__e2ee_wrapper);
+    }
+    return (originalOff as any).call(this, event, listener);
+  } as any;
+
+  sock.removeListener = sock.off;
+}
+
 let socket: GameSocket | null = null;
 let _gameServerUrl: string | null = null;
 
@@ -44,22 +82,7 @@ export const getSocket = (token?: string): GameSocket => {
       auth: token ? { token } : undefined,
     });
 
-    // --- Monkey-patch for E2EE (Application-Layer Encryption) ---
-    const originalEmit = socket.emit;
-    socket.emit = function (this: any, event: string, ...args: any[]) {
-      const encryptedArgs = args.map(arg => encryptPayload(arg));
-      return (originalEmit as any).call(this, event, ...encryptedArgs);
-    } as any;
-
-    const originalOn = socket.on;
-    socket.on = function (this: any, event: string, listener: (...args: any[]) => void) {
-      return (originalOn as any).call(this, event, (...args: any[]) => {
-        const decryptedArgs = args.map(arg => decryptPayload(arg));
-        listener(...decryptedArgs);
-      });
-    } as any;
-    // ------------------------------------------------------------
-
+    applyE2EEPatch(socket);
   } else if (token) {
     socket.auth = { token };
   }
@@ -83,6 +106,7 @@ export const initSocket = async (token?: string): Promise<GameSocket> => {
       withCredentials: true,
       auth: token ? { token } : undefined,
     });
+    applyE2EEPatch(socket);
   } else if (token) {
     socket.auth = { token };
   }
