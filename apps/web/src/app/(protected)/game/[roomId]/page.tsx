@@ -40,12 +40,15 @@ export default function GamePage({ params }: { params: { roomId: string } }) {
   }, [roomState?.status]);
 
   useEffect(() => {
-    if (roomState?.status === 'in_game' && gameState) {
-      setTurnAnnouncement(isMyTurn ? "SUA VEZ" : "TURNO DO INIMIGO");
-      const t = setTimeout(() => setTurnAnnouncement(null), 2000);
-      return () => clearTimeout(t);
-    }
-  }, [isMyTurn, roomState?.status, gameState?.turn]);
+    if (roomState?.status !== 'in_game' || !gameState) return;
+    // Não anuncia o turno enquanto a pergunta ou o feedback ainda estão na tela.
+    // Evita o "TURNO DO INIMIGO" surgir por cima do modal ainda aberto; o anúncio
+    // aparece logo após o modal fechar (currentQuestion/answerFeedback limpam).
+    if (currentQuestion || answerFeedback) return;
+    setTurnAnnouncement(isMyTurn ? "SUA VEZ" : "TURNO DO INIMIGO");
+    const t = setTimeout(() => setTurnAnnouncement(null), 2000);
+    return () => clearTimeout(t);
+  }, [isMyTurn, roomState?.status, gameState?.turn, currentQuestion, answerFeedback]);
 
   // Sincroniza o estado da sala ao montar (o socket é singleton e o
   // lobby:updated inicial já foi consumido na página anterior). Sem isso, o

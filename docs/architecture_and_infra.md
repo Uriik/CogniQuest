@@ -25,11 +25,14 @@ Um quiz em tempo real exige velocidade instantânea (<50ms de latência) e trans
 - **Por que separar?** WebSockets necessitam de conexões **Stateful** (long-lived connections). Se tentássemos embutir o Socket.io diretamente nas API routes do Next.js hospedado em arquiteturas serverless padrão, enfrentaríamos o problema de *cold starts* e queda de conexão constante (o servidor mata o container após ociosidade). 
 - **A Solução:** Isolar o Socket.io em um servidor Node (NestJS) dedicado. Ele roda permanentemente, retendo os Lobbys em memória e distribuindo eventos em milissegundos sem a sobrecarga das rotinas de SSR do frontend.
 
-### Criptografia Transparente no WebSocket (Monkey Patching & E2EE)
-Um desafio crítico foi proteger o tráfego WebSocket de engenharia reversa e scripts maliciosos (DevTools) utilizando End-to-End Encryption (E2EE) com AES. Em vez de reescrever centenas de emissões no cliente e no servidor, utilizamos a técnica de **Monkey Patching**:
-- Sobrescrevemos as funções nativas `socket.emit`, `socket.on` e `socket.off` injetando uma camada (`applyE2EEPatch`) que criptografa e descriptografa automaticamente os payloads de forma transparente.
-- **Circuit Breaker:** Se houver divergência de chaves (ex: `WS_SECRET` ausente em produção), pacotes inválidos disparam um erro controlado e são descartados antes de chegarem ao React, prevenindo *crashes* de renderização (Tela Branca).
-- **Gestão de Memória:** O *patch* cuida para não perder a referência interna do Socket.io. O contexto (`this`) das callbacks é preservado usando `listener.apply(this)`, e o `.off()` original é roteado para remover adequadamente o *wrapper* criptográfico, eliminando riscos de vazamento de memória (Memory Leak) ou quebras de desconexão.
+### Segurança da Camada WebSocket
+A proteção do canal WebSocket se apoia em camadas que de fato agregam segurança, sem código de cifra próprio:
+- **Transporte (`wss://` / TLS):** o tráfego é cifrado de ponta a ponta na rede pelo TLS terminado no Cloud Run. Confidencialidade e proteção contra MITM saem "de graça" no transporte.
+- **Autenticação no handshake (JWT):** sem um JWT válido, o socket nem abre; o `userId` usado nas autorizações vem das *claims verificadas*, não do cliente.
+- **Validação de entrada (Zod) + servidor-autoritativo:** todo evento é validado por schema na fronteira do gateway, e a lógica sensível (resposta correta, posição de navios) é resolvida exclusivamente no servidor.
+
+> [!NOTE]
+> Uma versão anterior aplicava criptografia AES nos payloads via *monkey patching* de `emit`/`on`/`off` (camada `applyE2EEPatch`, chave `WS_SECRET`). Essa camada foi **removida em 2026-06-07**: como a chave simétrica precisava ir ao navegador, ela não oferecia proteção real contra um cliente malicioso (o TLS já cifra a rede), e uma divergência de chave entre web e game-server derrubava toda a comunicação. Detalhes no [relatório de incidentes](deployment_incident_report.md) e no [doc de segurança](security_and_resilience.md).
 
 ## 3. Tecnologias Core da Infra
 

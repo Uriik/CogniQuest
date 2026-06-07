@@ -22,12 +22,19 @@ Utilizamos headers de segurança restritos (Content Security Policy) via `middle
 Manter uma conexão WebSocket aberta é inerentemente arriscado: uma porta bidirecional fica exposta, e pacotes chegam sem os tradicionais Headers HTTP após o Handshake inicial.
 
 **Como contornamos:**
-1. **JWT Handshake Authorization:** Nenhum cliente consegue sequer abrir um socket sem injetar um JSON Web Token válido no evento de conexão. O servidor NestJS analisa, decodifica a assinatura criptográfica e só então aceita o client.
+1. **JWT Handshake Authorization:** Nenhum cliente consegue sequer abrir um socket sem injetar um JSON Web Token válido no evento de conexão. O servidor NestJS analisa, decodifica a assinatura criptográfica e só então aceita o client. O `userId` usado em toda checagem de autorização vem das *claims verificadas* do token — nunca de algo que o cliente envia.
 2. **Rate Limit em Eventos de Socket:** Mesmo conectado, um usuário mal intencionado poderia disparar o evento `game:answer` milhares de vezes por segundo. Nós acoplamos um limitador específico de WS (*WsThrottlerGuard*) para os eventos do Socket.io. Se o client abusar, a conexão é brutalmente cortada.
-3. **Descriptografia de Camada de Aplicação (E2EE), Circuit Breaker e Prevenção de Memory Leaks:** Para dificultar a engenharia reversa via DevTools, implementamos criptografia AES nos payloads utilizando uma chave simétrica (`WS_SECRET`). Em vez de reescrever todas as chamadas manualmente, adotamos a técnica avançada de **Monkey Patching**, sobrescrevendo os métodos nativos `emit`, `on` e `off` do Socket.io tanto no Servidor (Middlewares/Interceptors) quanto no Frontend. 
-   - **Circuit Breaker:** Se as chaves estiverem dessincronizadas em produção, um erro é lançado e interceptado no próprio Monkey Patch, bloqueando a entrega do pacote corrompido aos *listeners* originais do React e prevenindo a "Tela Branca da Morte" (`.map is not a function`).
-   - **Gestão Segura de Memória:** O interceptador garante a preservação do escopo (`this`) via `listener.apply()` e repassa a mesma referência da função envelopada (wrapper) para o método `socket.off()`. Isso garante que as rotinas internas do Socket.io de limpeza e desconexão funcionem perfeitamente, eliminando riscos de Memory Leaks.
-4. **Authoritative Server:** O cliente nunca dita as regras. O websocket do Frontend jamais pode mandar o comando "eu venci". Ele envia "cliquei no radar C4". O servidor processa, verifica se era turno da pessoa e emite o resultado.
+3. **Confidencialidade na Camada de Transporte (TLS / `wss://`):** Todo o tráfego do Socket.io trafega sobre `wss://`, com o TLS terminado pelo Google Cloud Run. Payloads, tokens e eventos já são cifrados de ponta a ponta na rede — *sniffing* e MITM ficam inviáveis sem nenhuma camada extra de aplicação. Esta é a fonte real de confidencialidade do canal.
+4. **Validação de Entrada (Zod):** Todo payload recebido é validado por schema (`lobbyCreateSchema`, `lobbyJoinSchema`, etc.) na fronteira do gateway. Mensagem malformada é rejeitada antes de tocar a lógica de negócio. É *esta* a defesa concreta contra adulteração via DevTools — não a ofuscação de payload.
+5. **Authoritative Server:** O cliente nunca dita as regras. O websocket do Frontend jamais pode mandar o comando "eu venci". Ele envia "cliquei no radar C4". O servidor processa, verifica se era turno da pessoa, resolve a resposta correta e a posição dos navios *somente no servidor*, e emite apenas o resultado público. Respostas corretas e posições de navio nunca chegam ao cliente.
+
+> [!NOTE]
+> ### Decisão: remoção da cifra AES de camada de aplicação (2026-06-07)
+> Uma versão anterior aplicava criptografia AES nos payloads do Socket.io via *monkey patching* de `emit`/`on`/`off`, usando uma chave simétrica compartilhada (`WS_SECRET`). Essa camada foi **removida** por dois motivos:
+> - **Não agregava segurança real.** O design obrigava a mesma chave simétrica a ser enviada ao navegador (via `/api/config` ou `NEXT_PUBLIC_`), ou seja, qualquer usuário a extraía no DevTools e podia decifrar/forjar mensagens do mesmo jeito. Confidencialidade na rede já é garantida pelo TLS (`wss://`); integridade e identidade, pelo JWT + Zod + servidor-autoritativo.
+> - **Era um ponto único de falha.** Uma divergência de chave entre web e game-server quebrava 100% da comunicação (criação de sala travava em "Criando..." indefinidamente). Ver o incidente correspondente em [`deployment_incident_report.md`](deployment_incident_report.md).
+>
+> O modelo de segurança do WebSocket passou a se apoiar exclusivamente em **TLS + JWT + Zod + servidor-autoritativo**, eliminando a superfície de bug sem reduzir a proteção efetiva.
 
 ## 3. Políticas de Retry e Resiliência a Quedas
 

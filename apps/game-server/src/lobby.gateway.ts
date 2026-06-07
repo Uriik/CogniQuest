@@ -21,10 +21,7 @@ import {
 import { createSignedToken, generateNumericCode, verifySignedToken, checkRateLimit, RATE_RULES, RedisKvStore, rateKey, hashPassword, verifyPassword } from '@cogniquest/auth';
 import { getDb, users, eq } from '@cogniquest/db';
 import { randomUUID } from 'crypto';
-import Redis from 'ioredis';
-
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-redis.on('error', (err) => console.error('Redis Error:', err.message));
+import { redis } from './redis.client';
 
 @WebSocketGateway({ cors: { origin: process.env.WEB_CLIENT_URL || 'http://localhost:3000', credentials: true } })
 @UseGuards(WsThrottlerGuard)
@@ -292,9 +289,26 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       // Mais recentes primeiro.
       const ids = await redis.zrevrange('room:public:index', 0, 49);
+      if (ids.length === 0) return [];
+
+      // 1 round-trip para TODOS os hashes das salas (antes: N hgetall em loop).
+      const pipe = redis.pipeline();
+      ids.forEach((id) => pipe.hgetall(`room:${id}`));
+      const execed = (await pipe.exec()) || [];
+
+      // 1 round-trip agregado de presença entre instâncias (antes: N fetchSockets,
+      // um por sala). server.fetchSockets() devolve todos os sockets; montamos o
+      // conjunto de salas que têm ao menos um socket conectado.
+      const allSockets = await this.server.fetchSockets();
+      const liveRooms = new Set<string>();
+      for (const s of allSockets) {
+        for (const r of s.rooms) liveRooms.add(r);
+      }
+
       const rooms: PublicRoomState[] = [];
-      for (const id of ids) {
-        const r = await redis.hgetall(`room:${id}`);
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i]!;
+        const r = execed[i]?.[1] as Record<string, string> | undefined;
         // Limpa entradas órfãs (expiradas) do índice.
         if (!r || !r.roomId) {
           await redis.zrem('room:public:index', id);
@@ -302,10 +316,8 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
         // Lista salas duo abertas (aguardando oponente), públicas e privadas.
         if (r.status !== 'open' || r.mode === 'solo') continue;
-        // Garantia anti-fantasma: a sala precisa ter alguém realmente conectado
-        // (fetchSockets agrega entre instâncias via Redis adapter). Sem ninguém → deleta.
-        const sockets = await this.server.in(id).fetchSockets();
-        if (sockets.length === 0) {
+        // Anti-fantasma: a sala precisa ter alguém realmente conectado.
+        if (!liveRooms.has(id)) {
           await this.deleteRoom(id, r);
           continue;
         }
@@ -442,7 +454,7 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const r = roomData || (await redis.hgetall(`room:${roomId}`));
     await redis.del(`room:${roomId}`);
     await redis.zrem('room:public:index', roomId);
-    await redis.del(`game:${roomId}`, `game:${roomId}:questions`);
+    await redis.del(`game:${roomId}`, `game:${roomId}:questions`, `game:${roomId}:answers`);
     if (r?.hostId) {
       await redis.del(`user:${r.hostId}:room`, `room:${roomId}:ready:${r.hostId}`);
     }

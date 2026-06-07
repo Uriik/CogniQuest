@@ -5,7 +5,9 @@ import Redis from 'ioredis';
 
 jest.mock('@cogniquest/db', () => ({
   getDb: jest.fn().mockReturnValue({ query: { subjects: { findFirst: jest.fn() } }, insert: jest.fn().mockReturnValue({ values: jest.fn() }) }),
-  matches: {}, subjects: {}, eq: jest.fn(), getRandomQuestions: jest.fn().mockResolvedValue([])
+  matches: {}, subjects: {}, eq: jest.fn(),
+  getQuestionPool: jest.fn().mockResolvedValue({ questions: [], answers: {} }),
+  getCorrectOptionId: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('ioredis', () => {
@@ -16,6 +18,11 @@ jest.mock('ioredis', () => {
     hgetall: jest.fn(),
     hset: jest.fn(),
     del: jest.fn(),
+    expire: jest.fn(),
+    pipeline: jest.fn(() => ({ hgetall: jest.fn().mockReturnThis(), exec: jest.fn().mockResolvedValue([]) })),
+    zrevrange: jest.fn().mockResolvedValue([]),
+    zrem: jest.fn(),
+    on: jest.fn(),
   };
   return {
     __esModule: true,

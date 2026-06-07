@@ -56,11 +56,16 @@ export function useGameSocket() {
       s.on("game:answerResult", ({ correct, hintsAvailable, correctOptionId, selectedOptionId }) => {
         setHintsAvailable(hintsAvailable);
         setAnswerFeedback({ correct, correctOptionId, selectedOptionId });
-        
+
+        // Mantém o feedback (certo/errado destacado) tempo suficiente para o
+        // jogador registrar o resultado antes de fechar o modal. Erro mostra a
+        // resposta correta por mais tempo (valor pedagógico) e fica alinhado com
+        // o atraso de ~1200ms do servidor antes de revelar a troca de turno.
+        const closeDelay = correct ? 800 : 1200;
         setTimeout(() => {
           setAnswerFeedback(null);
           setCurrentQuestion(null);
-        }, 400);
+        }, closeDelay);
       });
       s.on("game:attackResult", (outcome) => {
         // Ignore incremental attackResult updates since `game:state` handles full sync now
