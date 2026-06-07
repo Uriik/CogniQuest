@@ -3,12 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PublicRoomState, gradeSchema, GRADE_LABELS } from "@cogniquest/shared";
-import { useGameSocket } from "../../../hooks/useGameSocket";
+import { useGameSocket } from "../../../hooks/GameSocketProvider";
 
 export default function LobbyPage() {
   const router = useRouter();
-  const { socket, publicRooms, subscribeLobby, unsubscribeLobby, isConnected, error } = useGameSocket();
+  const { socket, publicRooms, subscribeLobby, unsubscribeLobby, isConnected, error, resetGameState } = useGameSocket();
   const [inviteCode, setInviteCode] = useState("");
+
+  // Socket compartilhado: limpa estado/erro de uma partida anterior ao voltar ao
+  // lobby (senão um erro antigo apareceria aqui).
+  useEffect(() => {
+    resetGameState();
+  }, [resetGameState]);
 
   // Assina para receber as atualizações das salas em tempo real
   useEffect(() => {

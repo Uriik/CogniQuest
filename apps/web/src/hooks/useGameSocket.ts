@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { initSocket, GameSocket, disconnectSocket } from "../lib/socket";
 import { PublicRoomState, FleetSummary, PublicGameState, PublicQuestion, HintPayload, AttackOutcome } from "@cogniquest/shared";
 
-export function useGameSocket() {
+export function useGameSocketState() {
   const { data: session } = useSession();
   const [socket, setSocket] = useState<GameSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -113,6 +113,27 @@ export function useGameSocket() {
     };
   }, [(session as any)?.accessToken]);
 
+  // Limpa o estado transitório de uma partida. Necessário porque o socket agora
+  // vive no provider (sobrevive à navegação): sem isso, estado de um jogo vazaria
+  // para o próximo (ex.: winnerId/gameState antigos abrindo a tela de "Finalizada").
+  const resetGameState = useCallback(() => {
+    setRoomState(null);
+    setGameState(null);
+    setMyFleet(null);
+    setEnemyFleet(null);
+    setCurrentQuestion(null);
+    setHintsAvailable(0);
+    setError(null);
+    setWinnerId(null);
+    setInviteInfo(null);
+    setAnswerFeedback(null);
+    setEnemyRevealed([]);
+    setMyRevealed([]);
+    setMyAnswers(0);
+    setActiveAttack(null);
+    setSurrendered(false);
+  }, []);
+
   const isMyTurn = Boolean(gameState?.turn && session?.user?.id && gameState.turn === session.user.id);
 
   // Assina os eventos push do lobby para receber atualizações automáticas
@@ -132,6 +153,7 @@ export function useGameSocket() {
     publicRooms,
     subscribeLobby,
     unsubscribeLobby,
+    resetGameState,
     gameState,
     myFleet,
     enemyFleet,

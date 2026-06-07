@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useGameSocket } from "../../../../hooks/useGameSocket";
+import { useGameSocket } from "../../../../hooks/GameSocketProvider";
 import { RadarPanel } from "../../../../components/game/RadarPanel";
 import { FleetStatusPanel } from "../../../../components/game/FleetStatusPanel";
 import { QuestionModal } from "../../../../components/game/QuestionModal";
@@ -26,8 +26,17 @@ export default function GamePage({ params }: { params: { roomId: string } }) {
     activeAttack,
     surrendered,
     myAnswers,
-    enemyFleet
+    enemyFleet,
+    resetGameState
   } = useGameSocket();
+
+  // O socket agora persiste entre páginas (provider). Ao entrar em uma sala,
+  // limpa o estado transitório de uma partida anterior para não vazar (ex.: abrir
+  // direto na tela de "Finalizada" com winnerId antigo). O lobby:get abaixo
+  // re-popula o estado correto desta sala.
+  useEffect(() => {
+    resetGameState();
+  }, [params.roomId, resetGameState]);
 
   const [isSetupDone, setIsSetupDone] = useState(false);
   const [turnAnnouncement, setTurnAnnouncement] = useState<string | null>(null);

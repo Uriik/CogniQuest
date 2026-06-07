@@ -8,30 +8,38 @@ A principal jornada do jogador ocorre da seguinte maneira:
 
 ### Criação de Sala (Lobby)
 1. **Configuração:** O usuário acessa a página de criação, seleciona o Modo (Solo vs Máquina ou Duo PvP), a Matéria (Matemática, História, etc.) e a Série Escolar.
-2. **Socket Handshake:** Ao enviar o formulário, o frontend via Next.js passa esses dados para o `lobby.gateway.ts` no servidor NestJS usando Socket.io.
-3. **Alocação de ID:** O Game Server gera um `roomId` criptograficamente seguro e registra o "Lobby" em memória. Se a sala for pública, todos os outros usuários conectados recebem um evento `lobby:updated` e veem a sala surgir na sua tela inicial em tempo real.
-4. **Join:** Ao atingir a capacidade (ou se for solo), a partida é ativada.
+2. **Evento de socket:** Ao enviar o formulário, o frontend emite `lobby:create` para o `lobby.gateway.ts` (NestJS + Socket.io). Toda entrada é validada por Zod na fronteira; salas privadas exigem senha, armazenada apenas como hash (bcrypt).
+3. **Alocação de ID:** O Game Server gera um `roomId` (`randomUUID`) e persiste a sala no **Redis** (não em memória local), com TTL. Se a sala for pública/duo, ela entra no índice público e os demais clientes assinantes recebem `lobby:listed`/`lobby:updated` e a veem surgir em tempo real.
+4. **Robustez do ciclo de vida:** A sala recém-criada é marcada com `createdAt` e fica protegida por uma graça contra o "anti-fantasma" do lobby, que removeria salas sem ninguém conectado. Isso cobre a transição da tela de criação para a do jogo, em que o host fica brevemente sem socket. Além disso, o socket do cliente vive em um provider no layout protegido e **sobrevive à navegação** (lobby → criação → jogo), eliminando reconexões e a janela "sem socket".
+5. **Join:** Ao entrar o segundo jogador (ou imediatamente, no solo), a sala passa a `ready`/`in_game` e a partida inicia.
 
 ### O Websocket no Core da Partida
 Durante a partida ativa (`game.gateway.ts`), os jogadores se alternam atacando no tabuleiro (radar).
-- Quando um jogador ataca, o servidor busca uma **pergunta no banco** da matéria e série definida e envia aos clientes.
-- O jogo "trava" o tempo. Quem responder mais rápido e de forma correta envia o evento `game:answer`.
-- O servidor é a **única fonte da verdade** (Authoritative Server). Ele calcula a resposta, altera os hitpoints e emite a atualização de estado via `game:sync`. Nenhuma lógica de dano é processada no cliente, impedindo trapaças.
+- **Intenção de ataque:** o jogador emite `game:attackIntent`; o servidor responde com `game:question` — uma questão do lote cacheado, **sem o campo de resposta correta**.
+- **Resposta:** o jogador emite `game:answer`. O servidor valida lendo o id da resposta correta do **cache no Redis** (sem tocar o Postgres no caminho quente), emite `game:answerResult` e, em seguida, o estado público completo via `game:state`.
+- **Ritmo (UX):** numa resposta errada, o servidor adia (~1,2 s) a revelação da troca de turno e o início da IA, dando tempo de o jogador ver o feedback de certo/errado antes de o modal fechar. O cliente só anuncia "SUA VEZ"/"TURNO DO INIMIGO" quando o turno realmente muda, evitando flicker.
+- **Authoritative Server:** a resposta correta e a posição dos navios nunca vão ao cliente. Toda resolução de dano/turno acontece no servidor, impedindo trapaça.
 
 ## 2. Uso do Cache (Upstash Redis)
 
-Como o Node.js lida com memória em uma única thread, guardar todos os lobbys do servidor apenas em memória local limitaria o número de partidas que uma instância aguenta e impediria escalar o servidor de jogos horizontalmente.
-- O **Redis** foi usado como fonte unificada de estado global para salas e presença.
-- O Redis armazena metadados rápidos (quem está online, quantas salas abertas).
+Guardar o estado das partidas apenas em memória local limitaria quantas partidas uma instância aguenta e impediria escalar o game server horizontalmente. O **Redis** é a fonte unificada de estado global, e o adapter de Redis do Socket.io distribui eventos entre instâncias. Usos concretos:
+
+- **Estado de salas e presença:** salas, vínculo usuário→sala, índice público e graças de reconexão vivem no Redis.
+- **Lote de questões por matéria/série:** um pool é cacheado no Redis (`qcache:...`), evitando o `ORDER BY RANDOM()` no Postgres a cada partida; as partidas amostram do pool em memória.
+- **Validação de resposta sem banco:** o id da resposta correta de cada questão é cacheado por partida (server-only). Validar uma resposta — o evento mais frequente do jogo — vira uma leitura de Redis, com fallback ao Postgres só se o cache expirar.
+- **Listagem do lobby eficiente:** os estados das salas são lidos com pipeline (um round-trip) e a presença é checada de forma agregada (uma chamada), em vez de uma consulta por sala.
+- **Conexões consolidadas:** os gateways compartilham um único cliente Redis para reduzir a pressão no limite de conexões do provedor sob autoscaling.
 
 ## 3. Tabelas Utilizadas (Supabase)
 
-Para garantir integridade, desenhamos o banco via Drizzle com as seguintes tabelas chave:
-- `users`: Armazena credenciais (hashed), `grade` (série do aluno), pontuações gerais.
-- `subjects`: Tabela de catálogo (Matemática, Física).
-- `questions` e `question_options`: Banco de milhares de questões, amarradas à série.
-- `matches`: Histórico das partidas concluídas. Útil para auditoria e ranking no dashboard.
-- `match_players`: Qual jogador participou de qual partida e sua pontuação.
+Para garantir integridade, desenhamos o banco via Drizzle. O schema atual tem cinco tabelas:
+- `users`: credenciais (senha em hash bcrypt), `display_name`, `grade` (série do aluno), verificação de e-mail.
+- `subjects`: catálogo de matérias (slug, nome, ícone).
+- `questions`: enunciado, amarrado a `subject_id` e `grade`. Índice em `(subject_id, grade)` para o sorteio de questões.
+- `question_options`: alternativas de cada questão, com a flag `is_correct` — **server-only, nunca serializada ao cliente**. Índice em `question_id`.
+- `matches`: histórico das partidas concluídas (host, guest, matéria, série, vencedor, status). No modo solo, o guest é `null`. Índice em `(status, host_id)`.
+
+> O estado volátil da partida em si (tabuleiros, turno, revelações, mapa de respostas) vive no **Redis**, não no Postgres. O banco guarda só o que precisa persistir.
 
 ## 4. Testes (Playwright e Unitários)
 

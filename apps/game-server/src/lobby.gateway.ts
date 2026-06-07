@@ -23,6 +23,10 @@ import { getDb, users, eq } from '@cogniquest/db';
 import { randomUUID } from 'crypto';
 import { redis } from './redis.client';
 
+// Janela em que uma sala recém-criada NÃO é reapada pelo anti-fantasma, cobrindo
+// a transição de página do host (create -> game) sem socket conectado.
+const REAP_GRACE_MS = 15000;
+
 @WebSocketGateway({ cors: { origin: process.env.WEB_CLIENT_URL || 'http://localhost:3000', credentials: true } })
 @UseGuards(WsThrottlerGuard)
 export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -106,6 +110,10 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
 
       await redis.hset(`room:${roomId}`, state);
+      // Marca de criação. Protege a sala recém-criada do "anti-fantasma" do lobby
+      // durante a transição de página do host (create -> game), janela em que ele
+      // fica momentaneamente sem socket conectado.
+      await redis.hset(`room:${roomId}`, { createdAt: Date.now() });
       // Guarda só o hash da senha (nunca o texto puro) para salas privadas.
       if (isPrivate && parsed.password) {
         await redis.hset(`room:${roomId}`, { passwordHash: await hashPassword(parsed.password) });
@@ -318,6 +326,17 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (r.status !== 'open' || r.mode === 'solo') continue;
         // Anti-fantasma: a sala precisa ter alguém realmente conectado.
         if (!liveRooms.has(id)) {
+          // Sala recém-criada: o host pode estar trocando de página (create -> game)
+          // e momentaneamente sem socket. Não reapa durante essa graça; também não
+          // lista ainda (aparece assim que o host reconecta).
+          const age = Date.now() - Number(r.createdAt || 0);
+          if (age < REAP_GRACE_MS) continue;
+          // Reconexão em andamento (F5/queda rápida): respeita a graça de saída.
+          const gone = await redis.exists(
+            `gone:${id}:${r.hostId || ''}`,
+            `gone:${id}:${r.guestId || ''}`,
+          );
+          if (gone > 0) continue;
           await this.deleteRoom(id, r);
           continue;
         }
