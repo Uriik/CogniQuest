@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import { ClientToServerEvents, ServerToClientEvents, encryptPayload, decryptPayload } from "@cogniquest/shared";
+import { ClientToServerEvents, ServerToClientEvents, encryptPayload, decryptPayload, setSecretKey } from "@cogniquest/shared";
 import apiClient from "./axios";
 
 // Utilize specific socket type for strongly typed events
@@ -65,6 +65,9 @@ async function resolveGameServerUrl(): Promise<string> {
   try {
     const res = await apiClient.get("/api/config");
     const data = res.data;
+    if (data.wsSecret) {
+      setSecretKey(data.wsSecret);
+    }
     if (data.gameServerUrl) {
       _gameServerUrl = data.gameServerUrl;
       return _gameServerUrl!;

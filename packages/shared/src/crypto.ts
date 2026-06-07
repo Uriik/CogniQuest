@@ -1,7 +1,13 @@
 import CryptoJS from 'crypto-js';
 
 // The secret key should be injected from environment variables
-const SECRET_KEY = process.env.NEXT_PUBLIC_WS_SECRET || process.env.WS_SECRET || 'default_secret_key_123!';
+let SECRET_KEY = process.env.NEXT_PUBLIC_WS_SECRET || process.env.WS_SECRET || 'default_secret_key_123!';
+
+export function setSecretKey(key: string) {
+  if (key) {
+    SECRET_KEY = key;
+  }
+}
 
 /**
  * Encrypts a payload into an AES string.
