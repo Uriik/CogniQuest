@@ -26,10 +26,14 @@ export function decryptPayload(ciphertext: any): any {
   try {
     const bytes = CryptoJS.AES.decrypt(ciphertext, SECRET_KEY);
     const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
-    if (!decryptedStr) return ciphertext;
+    if (!decryptedStr) {
+      console.warn('WS Decryption failed: empty string (key mismatch?)');
+      throw new Error('WS Decryption failed: Key mismatch or malformed payload');
+    }
     return JSON.parse(decryptedStr);
   } catch (err) {
-    // Return original if decryption fails (e.g. wrong key, malformed)
-    return ciphertext;
+    // Throw error instead of returning ciphertext to prevent corrupting state with a string
+    console.warn('WS Decryption failed:', err);
+    throw new Error('WS Decryption failed: Key mismatch or malformed payload');
   }
 }

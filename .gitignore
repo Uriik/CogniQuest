@@ -54,3 +54,6 @@ pnpm-debug.log*
 .zencoder/
 data/
 skills/
+
+# documents
+docs/linkedin_post.md
