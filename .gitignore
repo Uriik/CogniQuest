@@ -57,3 +57,8 @@ skills/
 
 # documents
 docs/linkedin_post.md
+
+docs/importante.txt
+
+# scripts and temp DB utils
+scripts/db-utils/

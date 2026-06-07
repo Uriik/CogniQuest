@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Turnstile } from "@marsidev/react-turnstile";
+import apiClient from "@/lib/axios";
 
 function LoginForm() {
   const router = useRouter();
@@ -34,6 +35,38 @@ function LoginForm() {
 
     setLoading(true);
     try {
+      // Pré-checagem: o NextAuth mascara o motivo do authorize, então uma conta
+      // bloqueada apareceria como "senha incorreta". Aqui descobrimos o motivo real.
+      const pre = await apiClient.post("/api/auth/login-check", { email, password });
+      const status = pre.data?.status;
+
+      if (status === "pending_parental") {
+        setError("Sua conta aguarda autorização do responsável. Verifique o e-mail enviado a ele.");
+        setLoading(false);
+        return;
+      }
+      if (status === "suspended") {
+        setError("Sua conta foi suspensa. Entre em contato com o suporte.");
+        setLoading(false);
+        return;
+      }
+      if (status === "anonymized") {
+        setError("Esta conta foi excluída.");
+        setLoading(false);
+        return;
+      }
+      if (status === "rate_limited") {
+        setError("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
+        setLoading(false);
+        return;
+      }
+      if (status !== "ok") {
+        setError("E-mail ou senha incorretos.");
+        setLoading(false);
+        return;
+      }
+
+      // Conta ativa e credencial válida: emite a sessão de fato.
       const res = await signIn("credentials", {
         redirect: false,
         email,

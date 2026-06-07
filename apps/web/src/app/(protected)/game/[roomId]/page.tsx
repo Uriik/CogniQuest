@@ -38,6 +38,25 @@ export default function GamePage({ params }: { params: { roomId: string } }) {
     resetGameState();
   }, [params.roomId, resetGameState]);
 
+  // Presença: o socket agora persiste entre páginas (provider), então sair da
+  // sala por navegação NÃO desconecta. Sem isso, o servidor nunca sabe que o
+  // jogador saiu e o oponente fica preso em "Aguardando Oponente" para sempre.
+  // Avisamos explicitamente via lobby:leave no unmount. O atraso curto +
+  // cancelamento no (re)mount neutraliza o StrictMode (dev) e a transição
+  // setup -> jogo (mesma rota, sem desmontar).
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    return () => {
+      leaveTimerRef.current = setTimeout(() => {
+        socket?.emit("lobby:leave", { roomId: params.roomId });
+      }, 400);
+    };
+  }, [socket, params.roomId]);
+
   const [isSetupDone, setIsSetupDone] = useState(false);
   const [turnAnnouncement, setTurnAnnouncement] = useState<string | null>(null);
   // Último turno JÁ anunciado. Evita re-anúncio do mesmo turno e o flicker

@@ -69,6 +69,21 @@ export function Header({ userName = "Jogador" }: HeaderProps) {
               borderRadius: 'var(--radius-sm)', padding: '0.5rem', minWidth: '150px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.5)', zIndex: 100
             }}>
+              <Link href="/settings" style={{ textDecoration: 'none' }}>
+                <button 
+                  style={{
+                    width: '100%', textAlign: 'left', padding: '0.5rem 1rem',
+                    background: 'transparent', color: 'var(--text-main)', border: 'none',
+                    cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500,
+                    borderRadius: 'var(--radius-sm)'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                  onClick={() => setDropdownOpen(false)}
+                >
+                  Configurações
+                </button>
+              </Link>
               <button 
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 style={{

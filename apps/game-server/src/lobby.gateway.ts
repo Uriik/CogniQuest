@@ -17,9 +17,10 @@ import {
   lobbyRenameSchema,
   PublicRoomState,
   toPublicRoomState,
+  checkText,
 } from '@cogniquest/shared';
 import { createSignedToken, generateNumericCode, verifySignedToken, checkRateLimit, RATE_RULES, RedisKvStore, rateKey, hashPassword, verifyPassword } from '@cogniquest/auth';
-import { getDb, users, eq } from '@cogniquest/db';
+import { getDb, users, auditLog, eq } from '@cogniquest/db';
 import { randomUUID } from 'crypto';
 import { redis } from './redis.client';
 
@@ -87,6 +88,15 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (isPrivate && !parsed.password) {
         client.emit('error', { code: 'PASSWORD_REQUIRED', message: 'Sala privada precisa de senha' });
         return;
+      }
+
+      // ── Moderation: validate room name ──
+      if (parsed.name) {
+        const nameCheck = checkText(parsed.name, { fieldLabel: 'Nome da sala', minLength: 1, maxLength: 40 });
+        if (!nameCheck.ok) {
+          client.emit('error', { code: 'NAME_REJECTED', message: nameCheck.reason || 'Nome inadequado' });
+          return;
+        }
       }
 
       // Fetch host name
@@ -260,6 +270,31 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const { roomId, name } = lobbyRenameSchema.parse(payload);
       const userId = client.data?.userId || client.id;
+      const ip = client.handshake.address || '127.0.0.1';
+
+      // Rate limit rename
+      const kvStore = new RedisKvStore(redis);
+      const limit = await checkRateLimit(kvStore, rateKey('renameRoom', ip), RATE_RULES.renameRoom);
+      if (!limit.allowed) {
+        client.emit('error', { code: 'RATE_LIMIT_EXCEEDED', message: 'Rate limit exceeded' });
+        return;
+      }
+
+      // Moderation: validate new name
+      const nameCheck = checkText(name, { fieldLabel: 'Nome da sala', minLength: 1, maxLength: 40 });
+      if (!nameCheck.ok) {
+        client.emit('error', { code: 'NAME_REJECTED', message: nameCheck.reason || 'Nome inadequado' });
+        // Audit rejected rename attempt
+        const db = getDb();
+        await db.insert(auditLog).values({
+          actorId: userId,
+          action: 'name_rejected',
+          target: `room:${roomId}`,
+          metadata: JSON.stringify({ attempted: name, reason: nameCheck.reason }),
+        }).catch(() => {});
+        return;
+      }
+
       const roomData = await redis.hgetall(`room:${roomId}`);
 
       if (!roomData || roomData.hostId !== userId) {

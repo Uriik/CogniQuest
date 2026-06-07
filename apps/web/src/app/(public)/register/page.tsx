@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,21 +8,60 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { GRADES, GRADE_LABELS } from "@cogniquest/shared";
 import apiClient from "@/lib/axios";
 
+/** Derive age from YYYY-MM-DD string. */
+function getAge(dateStr: string): number | null {
+  if (!dateStr) return null;
+  const birth = new Date(dateStr);
+  if (isNaN(birth.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [grade, setGrade] = useState("");
+  const [birthdate, setBirthdate] = useState("");
+  const [guardianEmail, setGuardianEmail] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [pendingParental, setPendingParental] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const age = useMemo(() => getAge(birthdate), [birthdate]);
+  const isChild = age !== null && age < 12;
+  const isMinor = age !== null && age < 18;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    if (!acceptTerms || !acceptPrivacy) {
+      setError("É necessário aceitar os Termos de Uso e a Política de Privacidade.");
+      setLoading(false);
+      return;
+    }
+
+    if (!birthdate) {
+      setError("Informe sua data de nascimento.");
+      setLoading(false);
+      return;
+    }
+
+    if (isMinor && !guardianEmail) {
+      setError("Para menores de 18 anos, é necessário informar o e-mail do responsável.");
+      setLoading(false);
+      return;
+    }
 
     if (!turnstileToken) {
       setError("Por favor, resolva o captcha antes de continuar.");
@@ -36,13 +75,20 @@ export default function RegisterPage() {
         password,
         displayName,
         grade: grade || undefined,
-        turnstileToken: turnstileToken || 'dummy-token-for-tests',
+        turnstileToken: turnstileToken || "dummy-token-for-tests",
+        birthdate,
+        guardianEmail: isMinor ? guardianEmail : undefined,
+        acceptTerms: true,
+        acceptPrivacy: true,
       });
 
       const data = res.data;
 
-      // Axios throws on non-2xx status codes, so this block runs on success
-      setSuccess(true);
+      if (data.pendingParental) {
+        setPendingParental(true);
+      } else {
+        setSuccess(true);
+      }
     } catch (err: any) {
       const errorData = err.response?.data || {};
       if (errorData.error === "Email in use") {
@@ -56,6 +102,26 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+
+  if (pendingParental) {
+    return (
+      <div className="login-wrapper">
+        <div className="login-card text-center">
+          <h2 className="login-title mb-4">Aguardando Autorização</h2>
+          <p className="mb-4" style={{ color: "var(--text-muted)", lineHeight: 1.6 }}>
+            Sua conta foi criada, mas como você é menor de 18 anos, é necessário que um
+            responsável autorize sua participação.
+          </p>
+          <p className="mb-6" style={{ color: "var(--primary)", fontWeight: 600 }}>
+            Um e-mail foi enviado para o responsável com um link de autorização.
+          </p>
+          <button className="login-submit-btn" onClick={() => router.push("/login")}>
+            Ir para Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -105,6 +171,8 @@ export default function RegisterPage() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               required 
+              minLength={2}
+              maxLength={40}
             />
           </div>
 
@@ -137,6 +205,44 @@ export default function RegisterPage() {
           </div>
 
           <div className="input-group">
+            <label htmlFor="register-birthdate">Data de Nascimento</label>
+            <input 
+              type="date" 
+              id="register-birthdate" 
+              name="birthdate"
+              value={birthdate}
+              onChange={(e) => setBirthdate(e.target.value)}
+              required
+              max={new Date().toISOString().split("T")[0]}
+              className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+              style={{ colorScheme: "dark" }}
+            />
+            {age !== null && (
+              <span className="text-xs mt-1 block" style={{ color: isMinor ? "var(--accent-purple)" : "var(--text-muted)" }}>
+                {age} anos — {isChild ? "Criança (requer autorização do responsável)" : isMinor ? "Adolescente (requer autorização do responsável)" : "Adulto"}
+              </span>
+            )}
+          </div>
+
+          {isChild && (
+            <div className="input-group">
+              <label htmlFor="register-guardian">E-mail do Responsável</label>
+              <input 
+                type="email" 
+                id="register-guardian" 
+                name="guardianEmail"
+                placeholder="email.do.responsavel@exemplo.com" 
+                value={guardianEmail}
+                onChange={(e) => setGuardianEmail(e.target.value)}
+                required
+              />
+              <span className="text-xs text-slate-400 mt-1 block">
+                O responsável receberá um e-mail para autorizar sua conta (LGPD, Art. 14).
+              </span>
+            </div>
+          )}
+
+          <div className="input-group">
             <label htmlFor="register-grade">Série Escolar</label>
             <select 
               id="register-grade" 
@@ -153,6 +259,34 @@ export default function RegisterPage() {
             </select>
           </div>
 
+          {/* Consent checkboxes */}
+          <div style={{ marginTop: "1.5rem", marginBottom: "0.5rem" }}>
+            <div className="consent-group">
+              <input 
+                type="checkbox" 
+                id="accept-terms"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+              />
+              <label htmlFor="accept-terms">
+                Li e concordo com os{" "}
+                <Link href="/termos" target="_blank">Termos de Uso</Link>
+              </label>
+            </div>
+            <div className="consent-group">
+              <input 
+                type="checkbox" 
+                id="accept-privacy"
+                checked={acceptPrivacy}
+                onChange={(e) => setAcceptPrivacy(e.target.checked)}
+              />
+              <label htmlFor="accept-privacy">
+                Li e concordo com a{" "}
+                <Link href="/privacidade" target="_blank">Política de Privacidade</Link>
+              </label>
+            </div>
+          </div>
+
           <div className="flex justify-center mb-4 mt-6">
             <Turnstile
               siteKey={(typeof window !== "undefined" ? (window as any).__ENV?.TURNSTILE_SITE_KEY : null) || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
@@ -163,7 +297,7 @@ export default function RegisterPage() {
           <button 
             type="submit" 
             className="login-submit-btn" 
-            disabled={loading}
+            disabled={loading || !acceptTerms || !acceptPrivacy}
           >
             {loading ? "Registrando..." : "Cadastrar-se"}
           </button>

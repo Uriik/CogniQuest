@@ -1,4 +1,4 @@
-import { KvStore } from "./rate-limit.js";
+import type { KvStore } from "./rate-limit.js";
 
 export class RedisKvStore implements KvStore {
   constructor(private redis: any) {}

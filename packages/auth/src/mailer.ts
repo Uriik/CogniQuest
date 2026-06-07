@@ -107,3 +107,46 @@ export async function sendVerificationEmail(to: string, link: string): Promise<v
     </div>`;
   await sendMail(to, subject, html, `Confirme seu e-mail: ${link}`);
 }
+
+/** Send parental consent request email (LGPD Art. 14 — children under 12). */
+export async function sendParentalConsentEmail(
+  guardianEmail: string,
+  childName: string,
+  confirmLink: string,
+): Promise<void> {
+  const subject = "Autorização de Conta — CogniQuest";
+  const html = `
+    <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:auto">
+      <h2 style="color:#00BFA6">CogniQuest — Autorização Parental</h2>
+      <p>Olá! <strong>${childName}</strong> solicitou a criação de uma conta na plataforma educativa
+         <strong>CogniQuest</strong>.</p>
+      <p>Como responsável, você precisa autorizar o uso da plataforma e o tratamento dos dados
+         do menor, conforme a Lei Geral de Proteção de Dados (LGPD, Art. 14).</p>
+      <h3 style="color:#94a3b8">Dados coletados:</h3>
+      <ul style="color:#cbd5e1;font-size:14px">
+        <li>Nome de exibição (apelido no jogo)</li>
+        <li>E-mail</li>
+        <li>Data de nascimento (para classificação etária)</li>
+        <li>Série escolar (para adequação de conteúdo)</li>
+        <li>Histórico de partidas (para ranking educativo)</li>
+      </ul>
+      <p>Todos os dados são utilizados exclusivamente para fins educativos e de funcionamento
+         da plataforma. Nenhum dado é compartilhado com terceiros para fins comerciais.</p>
+      <p style="text-align:center;margin-top:24px">
+        <a href="${confirmLink}" style="background:#00F0FF;color:#05070F;padding:14px 28px;
+              border-radius:8px;text-decoration:none;font-weight:700;font-size:16px">
+          Autorizar Conta
+        </a>
+      </p>
+      <p style="color:#64748b;font-size:13px;margin-top:24px">
+        Este link expira em 72 horas. Se você não reconhece esta solicitação, ignore este e-mail.
+      </p>
+      <p style="color:#64748b;font-size:12px">
+        Você pode solicitar a exclusão dos dados a qualquer momento através da plataforma
+        ou entrando em contato pelo e-mail de suporte.
+      </p>
+    </div>`;
+  const text = `Olá! ${childName} solicitou a criação de uma conta no CogniQuest. Autorize em: ${confirmLink} (expira em 72h)`;
+  await sendMail(guardianEmail, subject, html, text);
+}
+

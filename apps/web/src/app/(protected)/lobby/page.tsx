@@ -9,6 +9,8 @@ export default function LobbyPage() {
   const router = useRouter();
   const { socket, publicRooms, subscribeLobby, unsubscribeLobby, isConnected, error, resetGameState } = useGameSocket();
   const [inviteCode, setInviteCode] = useState("");
+  // Senha digitada inline por sala privada (chave = roomId).
+  const [passwords, setPasswords] = useState<Record<string, string>>({});
 
   // Socket compartilhado: limpa estado/erro de uma partida anterior ao voltar ao
   // lobby (senão um erro antigo apareceria aqui).
@@ -31,12 +33,9 @@ export default function LobbyPage() {
   const handleJoinRoom = (room: PublicRoomState) => {
     if (!socket) return;
 
-    let password: string | undefined;
-    if (!room.isPublic) {
-      const pw = window.prompt("Esta sala é privada. Digite a senha para entrar:");
-      if (pw === null) return; // cancelou
-      password = pw;
-    }
+    // Sala privada: usa a senha digitada inline no card.
+    const password = room.isPublic ? undefined : (passwords[room.roomId] || "").trim();
+    if (!room.isPublic && !password) return; // sem senha, não envia
 
     socket.once("lobby:updated", (state) => {
       router.push(`/game/${state.roomId}`);
@@ -101,12 +100,33 @@ export default function LobbyPage() {
                 </div>
               </div>
               <div className="room-card-footer">
-                <button
-                  className="join-room-btn"
-                  onClick={() => handleJoinRoom(room)}
-                >
-                  {room.isPublic ? "Entrar na Sala" : "🔒 Entrar com Senha"}
-                </button>
+                {room.isPublic ? (
+                  <button className="join-room-btn" onClick={() => handleJoinRoom(room)}>
+                    Entrar na Sala
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2 w-full">
+                    <input
+                      type="password"
+                      placeholder="🔒 Senha da sala"
+                      value={passwords[room.roomId] || ""}
+                      onChange={(e) =>
+                        setPasswords((prev) => ({ ...prev, [room.roomId]: e.target.value }))
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleJoinRoom(room);
+                      }}
+                      className="bg-[rgba(0,10,30,0.5)] border border-[rgba(0,255,255,0.2)] rounded px-3 py-2 text-white placeholder-slate-500 w-full text-sm"
+                    />
+                    <button
+                      className="join-room-btn"
+                      onClick={() => handleJoinRoom(room)}
+                      disabled={!(passwords[room.roomId] || "").trim()}
+                    >
+                      Entrar
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))

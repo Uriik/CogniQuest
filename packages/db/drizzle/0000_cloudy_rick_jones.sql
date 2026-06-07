@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"email" text NOT NULL,
 	"password_hash" text NOT NULL,
 	"display_name" text NOT NULL,
-	"age_band" text,
+	"grade" text,
 	"email_verified_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone,
