@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useGameSocket } from "../../../../hooks/useGameSocket";
+import { useGameSocket } from "../../../../hooks/GameSocketProvider";
 import { VisibilitySelector } from "../../../../components/common/VisibilitySelector";
 
 const SUBJECTS = [

@@ -209,6 +209,28 @@ Todos os erros foram resolvidos em **17 commits** ao longo de uma sessão de ~3 
 
 ---
 
+### 🔴 Erro #14 — WebSocket E2EE: sala travada em "Criando..." (key mismatch)
+
+| Campo | Detalhe |
+|-------|---------|
+| **Quando** | 2026-06-07, após o sistema já estar online, ao tentar criar sala |
+| **Serviço** | Ambos (`cogniquest-web` browser-side e `cogniquest-game-server`) |
+| **Mensagem** | Console do browser: `WS Decryption failed: Malformed UTF-8 data` e `Socket.on(lobby:listed) E2EE decryption failed: Key mismatch or malformed payload`. O botão ficava preso em **"Criando..."** indefinidamente |
+| **Causa Raiz** | A camada de criptografia AES dos payloads do Socket.io usava chaves **diferentes** nos dois lados. O game-server tinha `WS_SECRET` configurado (chave real); o front nunca recebia essa chave (o `resolveGameServerUrl` retornava cedo via `window.__ENV` e nunca chamava `setSecretKey`, e nenhum `WS_SECRET`/`NEXT_PUBLIC_WS_SECRET` existia no ambiente web), caindo na chave default `'default_secret_key_123!'`. Resultado: o `lobby:create` cifrado pelo front era rejeitado pelo middleware de decrypt do servidor → o handler nunca rodava → nenhum `lobby:created` voltava |
+| **Solução** | **Remoção completa da camada AES de aplicação** (monkey patching de `emit`/`on`/`off`) no front (`socket.ts`) e no servidor (`main.ts`); remoção do `wsSecret` exposto em `/api/config`; exclusão do módulo `packages/shared/src/crypto.ts`. A segurança do canal passou a se apoiar em `wss`/TLS + JWT no handshake + validação Zod + servidor-autoritativo. A variável `WS_SECRET` no Cloud Run do game-server tornou-se obsoleta |
+| **Commit** | _pendente (mudança desta sessão; lembrar de redeployar web e game-server **juntos** e remover a env var `WS_SECRET`)_ |
+
+**Arquivos modificados:**
+- [main.ts](file:///c:/Users/gabri/prj/CogniQuest/apps/game-server/src/main.ts) — removido patch de emit + middleware de decrypt
+- [socket.ts](file:///c:/Users/gabri/prj/CogniQuest/apps/web/src/lib/socket.ts) — removido `applyE2EEPatch` e `setSecretKey`
+- [/api/config/route.ts](file:///c:/Users/gabri/prj/CogniQuest/apps/web/src/app/api/config/route.ts) — parou de devolver `wsSecret`
+- `packages/shared/src/crypto.ts` — **excluído**
+
+> [!IMPORTANT]
+> Este foi um caso clássico em que **testes unitários passavam** (cada lado cifra/decifra corretamente isolado) mas a integração quebrava, porque o defeito era a **divergência de chave em runtime** entre dois serviços — algo que só um teste de integração ponta-a-ponta ou o ambiente real expõe.
+
+---
+
 ## Resumo Visual dos Erros
 
 ```mermaid
@@ -226,7 +248,11 @@ flowchart TD
     K --> L["#11 CSP + URL vazia"]
     L --> M["#12 TS scope error"]
     M --> N["#13 403 CORS + IAM"]
-    N --> O["✅ Funcionando!"]
+    N --> O["✅ Online!"]
+    O --> P["#14 WS E2EE key mismatch <br> (Criando... eterno)"]
+    P --> Q["✅ AES removido <br> wss + JWT + Zod"]
+    style P fill:#2d2d3d,stroke:#e94560,color:#fff
+    style Q fill:#0f3460,stroke:#16c79a,color:#fff
     
     style A fill:#1a1a2e,stroke:#e94560,color:#fff
     style O fill:#0f3460,stroke:#16c79a,color:#fff
@@ -255,6 +281,7 @@ flowchart TD
 | 📦 Empacotamento (Webpack, Docker, Standalone) | #3, #6, #7, #8, #9 | 5 |
 | 🔒 Segurança (CSP, CORS) | #11, #13 | 2 |
 | 💻 Código (TypeScript, lógica) | #2, #10, #12 | 3 |
+| 🔌 WebSocket / Cifra (pós-launch) | #14 | 1 |
 
 ---
 
@@ -283,6 +310,10 @@ flowchart TD
 > [!TIP]
 > ### 6. Sempre commit `package.json` junto com `pnpm-lock.yaml`
 > O `--frozen-lockfile` do CI rejeita instalações quando os dois arquivos estão desincronizados.
+
+> [!TIP]
+> ### 7. Não cifre o que o TLS já cifra — e não compartilhe chave com o navegador
+> A camada AES de aplicação no WebSocket (Erro #14) não agregava segurança (a chave ia para o browser) e virou um ponto único de falha. Sobre `wss://`, o transporte já é cifrado; a defesa real é JWT no handshake + validação Zod + servidor-autoritativo. Complexidade que não paga aluguel deve ser removida.
 
 ---
 
@@ -319,4 +350,5 @@ flowchart TD
 ✅ **IAM** — Ambos os serviços públicos com `allUsers` Invoker  
 ✅ **WebSocket** — Upgrade HTTP→WS (101) confirmado nos logs  
 ⚠️ **CSP** — Temporariamente desativada (reativar após estabilização)  
-⚠️ **Cold Start** — Primeira requisição socket.io pode dar 502 (comportamento esperado do Cloud Run com min_instances=0)
+⚠️ **Cold Start** — Primeira requisição socket.io pode dar 502 (comportamento esperado do Cloud Run com min_instances=0)  
+🔌 **WebSocket E2EE** — Camada AES de aplicação **removida** (Erro #14). Canal protegido por `wss`/TLS + JWT + Zod + servidor-autoritativo. Env var `WS_SECRET` no game-server tornou-se obsoleta (remover no próximo deploy)

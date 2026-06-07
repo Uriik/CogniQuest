@@ -23,7 +23,17 @@ Responsável por entregar as páginas do usuário (Server-Side Rendering) e hosp
 ### NestJS Socket.io (Game Server Stateful)
 Um quiz em tempo real exige velocidade instantânea (<50ms de latência) e transmissão de eventos para vários jogadores ao mesmo tempo. 
 - **Por que separar?** WebSockets necessitam de conexões **Stateful** (long-lived connections). Se tentássemos embutir o Socket.io diretamente nas API routes do Next.js hospedado em arquiteturas serverless padrão, enfrentaríamos o problema de *cold starts* e queda de conexão constante (o servidor mata o container após ociosidade). 
-- **A Solução:** Isolar o Socket.io em um servidor Node (NestJS) dedicado. Ele roda permanentemente, retendo os Lobbys em memória e distribuindo eventos em milissegundos sem a sobrecarga das rotinas de SSR do frontend.
+- **A Solução:** Isolar o Socket.io em um servidor Node (NestJS) dedicado. Ele roda permanentemente e distribui eventos em milissegundos sem a sobrecarga do SSR. O estado das salas e partidas fica no **Redis** (não em memória local), e o **adapter de Redis do Socket.io** propaga os eventos entre instâncias — então o game server escala horizontalmente sem perder a entrega de eventos.
+- **Socket persistente no cliente:** o socket do frontend vive em um provider no layout protegido e sobrevive à navegação entre páginas (lobby → criação → jogo). Isso elimina a reconexão a cada troca de tela e a janela "sem socket" que, durante a transição da criação para o jogo, chegava a derrubar salas recém-criadas.
+
+### Segurança da Camada WebSocket
+A proteção do canal WebSocket se apoia em camadas que de fato agregam segurança, sem código de cifra próprio:
+- **Transporte (`wss://` / TLS):** o tráfego é cifrado de ponta a ponta na rede pelo TLS terminado no Cloud Run. Confidencialidade e proteção contra MITM saem "de graça" no transporte.
+- **Autenticação no handshake (JWT):** sem um JWT válido, o socket nem abre; o `userId` usado nas autorizações vem das *claims verificadas*, não do cliente.
+- **Validação de entrada (Zod) + servidor-autoritativo:** todo evento é validado por schema na fronteira do gateway, e a lógica sensível (resposta correta, posição de navios) é resolvida exclusivamente no servidor.
+
+> [!NOTE]
+> Uma versão anterior aplicava criptografia AES nos payloads via *monkey patching* de `emit`/`on`/`off` (camada `applyE2EEPatch`, chave `WS_SECRET`). Essa camada foi **removida em 2026-06-07**: como a chave simétrica precisava ir ao navegador, ela não oferecia proteção real contra um cliente malicioso (o TLS já cifra a rede), e uma divergência de chave entre web e game-server derrubava toda a comunicação. Detalhes no [relatório de incidentes](deployment_incident_report.md) e no [doc de segurança](security_and_resilience.md).
 
 ## 3. Tecnologias Core da Infra
 

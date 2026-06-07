@@ -44,6 +44,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error("Credenciais inválidas");
         }
 
+        // ── LGPD: Check account status ──
+        if (user.status === "pending_parental") {
+          throw new Error("Sua conta aguarda autorização do responsável. Verifique o e-mail enviado.");
+        }
+        if (user.status === "suspended") {
+          throw new Error("Sua conta foi suspensa. Entre em contato com o suporte.");
+        }
+        if (user.anonymizedAt) {
+          throw new Error("Esta conta foi excluída.");
+        }
+
         return {
           id: user.id,
           name: user.displayName,

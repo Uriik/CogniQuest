@@ -12,13 +12,30 @@ import { WsThrottlerGuard } from './common/guards/ws-throttler.guard';
 import { Server, Socket } from 'socket.io';
 import { gameReadySchema, gameAnswerSchema, gameAttackIntentSchema, gameAttackSchema, gameUseHintSchema, PublicGameState, toPublicRoomState } from '@cogniquest/shared';
 import { checkRateLimit, RATE_RULES, RedisKvStore, rateKey } from '@cogniquest/auth';
-import { getRandomQuestions, checkAnswer, getDb, matches, subjects, eq, getCorrectOptionId } from '@cogniquest/db';
+import { getQuestionPool, getCorrectOptionId, getDb, matches, subjects, eq } from '@cogniquest/db';
 import { placeFleetRandom, resolveAttack, isFleetDestroyed, fleetSummary, computeHint } from '@cogniquest/game-engine';
 import { randomUUID } from 'crypto';
-import Redis from 'ioredis';
+import { redis } from './redis.client';
 
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-redis.on('error', (err) => console.error('Redis Error:', err.message));
+// Adapta o cliente ioredis à interface CacheStore esperada por getQuestionPool.
+const questionCache = {
+  get: (key: string) => redis.get(key),
+  set: async (key: string, value: string, ttlSeconds?: number) => {
+    if (ttlSeconds) await redis.set(key, value, 'EX', ttlSeconds);
+    else await redis.set(key, value);
+  },
+};
+
+// Sorteia (Fisher-Yates) e retorna os primeiros `n` itens — amostragem em memória,
+// evitando ORDER BY RANDOM() por partida.
+function sampleN<T>(arr: T[], n: number): T[] {
+  const copy = arr.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+  }
+  return copy.slice(0, n);
+}
 
 @WebSocketGateway({ cors: { origin: process.env.WEB_CLIENT_URL || 'http://localhost:3000', credentials: true } })
 @UseGuards(WsThrottlerGuard)
@@ -150,9 +167,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // IMPORTANTE: prepara TUDO (perguntas, estado) ANTES de marcar in_game.
         // Se algo falhar aqui, o status continua 'ready' e ninguém fica preso
         // numa sala 'in_game' sem nunca receber os eventos de início.
-        const fetchedQs = await getRandomQuestions(roomData.subjectSlug!, roomData.grade!, 50);
+        const pool = await getQuestionPool(roomData.subjectSlug!, roomData.grade!, questionCache);
+        const sampled = sampleN(pool.questions, 50);
+        // Mapa de respostas SERVER-ONLY desta partida (questionId -> correctOptionId).
+        // Fica só no Redis; valida respostas sem tocar o Postgres.
+        const answersMap: Record<string, string> = {};
+        for (const q of sampled) {
+          const a = pool.answers[q.id];
+          if (a) answersMap[q.id] = a;
+        }
         await redis.set(`game:${roomId}`, JSON.stringify(gameState), 'EX', 86400);
-        await redis.set(`game:${roomId}:questions`, JSON.stringify(fetchedQs), 'EX', 86400);
+        await redis.set(`game:${roomId}:questions`, JSON.stringify(sampled), 'EX', 86400);
+        if (Object.keys(answersMap).length) {
+          await redis.hset(`game:${roomId}:answers`, answersMap);
+          await redis.expire(`game:${roomId}:answers`, 86400);
+        }
 
         // Agora sim: marca a partida como iniciada.
         await redis.hset(`room:${roomId}`, { status: 'in_game' });
@@ -213,10 +242,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (qStr) {
         let qs = JSON.parse(qStr);
 
-        // Se acabaram as perguntas da memória, busca um novo lote de 50 no banco de dados
+        // Se acabaram as perguntas da memória, amostra um novo lote do pool cacheado.
         if (qs.length === 0) {
           const roomData = await redis.hgetall(`room:${roomId}`);
-          qs = await getRandomQuestions(roomData.subjectSlug!, roomData.grade!, 50);
+          const pool = await getQuestionPool(roomData.subjectSlug!, roomData.grade!, questionCache);
+          qs = sampleN(pool.questions, 50);
+          // Estende o mapa de respostas da partida com o novo lote.
+          const answersMap: Record<string, string> = {};
+          for (const q of qs) {
+            const a = pool.answers[q.id];
+            if (a) answersMap[q.id] = a;
+          }
+          if (Object.keys(answersMap).length) {
+            await redis.hset(`game:${roomId}:answers`, answersMap);
+            await redis.expire(`game:${roomId}:answers`, 86400);
+          }
         }
 
         const randomIndex = Math.floor(Math.random() * qs.length);
@@ -258,7 +298,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      const isCorrect = await checkAnswer(questionId, optionId);
+      // Validação no caminho QUENTE sem tocar o Postgres: o id da resposta correta
+      // foi cacheado no Redis (server-only) quando o lote foi montado. Fallback ao
+      // banco só se o cache expirou/sumiu (raro).
+      let correctOptionId = (await redis.hget(`game:${roomId}:answers`, questionId)) || undefined;
+      if (!correctOptionId) {
+        correctOptionId = await getCorrectOptionId(questionId);
+      }
+      const isCorrect = !!correctOptionId && correctOptionId === optionId;
+
       const roomData = await redis.hgetall(`room:${roomId}`);
       const isHost = userId === roomData.hostId;
 
@@ -267,8 +315,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       } else {
         gameState.guestAnswers = (gameState.guestAnswers || 0) + 1;
       }
-
-      const correctOptionId = await getCorrectOptionId(questionId);
 
       if (isCorrect) {
         client.emit('game:answerResult', { 
@@ -293,24 +339,35 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         gameState.pendingAttack = null;
         const hostId = roomData.hostId;
         const guestId = roomData.guestId;
-        
+
+        // A verdade autoritativa do turno troca JÁ (impede o jogador de tentar
+        // outro ataque na janela de feedback — attackIntent rejeita por turno).
         gameState.turn = (gameState.turn === hostId) ? guestId : hostId;
-        
+
         await redis.set(`game:${roomId}`, JSON.stringify(gameState), 'EX', 86400);
-        
-        client.emit('game:answerResult', { 
-          correct: false, 
+
+        // Feedback imediato: o jogador vê certo/errado na hora.
+        client.emit('game:answerResult', {
+          correct: false,
           canAttack: false,
           hintsAvailable: 0,
           selectedOptionId: optionId,
           correctOptionId
         });
-        
-        this.server.to(roomId).emit('game:state', this.getPublicState(roomId, gameState, roomData));
-        
-        if (roomData.mode === 'solo' && gameState.turn === 'AI') {
-          this.simulateAITurn(roomId);
-        }
+
+        // Pacing de UX: só REVELA a troca de turno (e dispara a IA) depois que o
+        // jogador teve tempo de ver o feedback e o modal fechar. Espelha o ritmo
+        // do acerto (que aguarda a animação do torpedo antes de seguir).
+        setTimeout(async () => {
+          const freshStr = await redis.get(`game:${roomId}`);
+          if (!freshStr) return; // jogo encerrado/abandonado durante a espera
+          const fresh = JSON.parse(freshStr);
+          const freshRoom = await redis.hgetall(`room:${roomId}`);
+          this.server.to(roomId).emit('game:state', this.getPublicState(roomId, fresh, freshRoom));
+          if (freshRoom.mode === 'solo' && fresh.turn === 'AI') {
+            this.simulateAITurn(roomId);
+          }
+        }, 1200);
       }
 
       // SEMPRE deleta a pergunta atual após ela ser respondida (certa ou errada)
@@ -348,7 +405,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (won) {
       this.server.to(roomId).emit('game:over', { winnerId: userId });
       await this.saveMatch(roomId, userId, 'finished');
-      await redis.del(`game:${roomId}`);
+      await redis.del(`game:${roomId}`, `game:${roomId}:questions`, `game:${roomId}:answers`);
       await redis.hset(`room:${roomId}`, { status: 'finished' });
       return;
     }

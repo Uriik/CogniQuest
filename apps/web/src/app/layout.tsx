@@ -10,6 +10,11 @@ const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 export const metadata: Metadata = {
   title: "CogniQuest",
   description: "Plataforma de ensino gamificada",
+  icons: {
+    icon: [{ url: "/logo_icon.svg", type: "image/svg+xml" }],
+    shortcut: "/logo_icon.svg",
+    apple: "/logo_icon.svg",
+  },
 };
 
 export default function RootLayout({

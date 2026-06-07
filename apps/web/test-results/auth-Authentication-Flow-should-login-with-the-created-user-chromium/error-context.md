@@ -20,7 +20,7 @@ Timeout:  10000ms
 
 Call log:
   - Expect "toHaveURL" with timeout 10000ms
-    24 × unexpected value "http://localhost:3000/login"
+    23 × unexpected value "http://localhost:3000/login"
 
 ```
 
@@ -31,7 +31,7 @@ Call log:
 - text: E-mail ou senha incorretos. E-mail
 - textbox "E-mail":
   - /placeholder: nome@exemplo.com
-  - text: test_a39a6d20@example.com
+  - text: test_f2e20e1c@example.com
 - text: Senha
 - link "Esqueci a senha":
   - /url: /forgot-password

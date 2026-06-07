@@ -30,6 +30,7 @@ export const RATE_RULES = {
   register: { max: 3, windowSeconds: 60 },
   createRoom: { max: 10, windowSeconds: 60 },
   answer: { max: 30, windowSeconds: 10 },
+  renameRoom: { max: 5, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export async function checkRateLimit(

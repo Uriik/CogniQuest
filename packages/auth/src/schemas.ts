@@ -21,6 +21,11 @@ export const registerSchema = z.object({
   displayName: z.string().min(2).max(40),
   grade: z.enum(GRADES).optional(),
   turnstileToken: z.string().min(10),
+  // ── LGPD additions ──
+  birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida (AAAA-MM-DD)"),
+  guardianEmail: emailSchema.optional(),
+  acceptTerms: z.literal(true, { errorMap: () => ({ message: "É necessário aceitar os Termos de Uso" }) }),
+  acceptPrivacy: z.literal(true, { errorMap: () => ({ message: "É necessário aceitar a Política de Privacidade" }) }),
 });
 
 export const otpCodeSchema = z.string().length(6).regex(/^\d{6}$/);

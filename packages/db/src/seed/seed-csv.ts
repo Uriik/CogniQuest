@@ -28,8 +28,8 @@ async function main() {
   });
 
   let isFirstLine = true;
-  let batchQuestions = [];
-  let batchOptions = [];
+  let batchQuestions: (typeof questions.$inferInsert)[] = [];
+  let batchOptions: (typeof questionOptions.$inferInsert)[] = [];
   let count = 0;
 
   for await (const line of rl) {
@@ -42,13 +42,15 @@ async function main() {
     if (parts.length < 7) continue;
 
     const [grade, prompt, optA, optB, optC, optD, correct] = parts;
+    if (!prompt || !grade || !optA || !optB || !optC || !optD || !correct) continue;
+
     const answerIndex = correct === 'A' ? 0 : correct === 'B' ? 1 : correct === 'C' ? 2 : correct === 'D' ? 3 : 0;
     
     const questionId = crypto.randomUUID();
     batchQuestions.push({
       id: questionId,
       subjectId: mathSubject.id,
-      grade: grade as any,
+      grade: grade,
       prompt: prompt
     });
 

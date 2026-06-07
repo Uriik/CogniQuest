@@ -17,14 +17,16 @@ import {
   lobbyRenameSchema,
   PublicRoomState,
   toPublicRoomState,
+  checkText,
 } from '@cogniquest/shared';
 import { createSignedToken, generateNumericCode, verifySignedToken, checkRateLimit, RATE_RULES, RedisKvStore, rateKey, hashPassword, verifyPassword } from '@cogniquest/auth';
-import { getDb, users, eq } from '@cogniquest/db';
+import { getDb, users, auditLog, eq } from '@cogniquest/db';
 import { randomUUID } from 'crypto';
-import Redis from 'ioredis';
+import { redis } from './redis.client';
 
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-redis.on('error', (err) => console.error('Redis Error:', err.message));
+// Janela em que uma sala recém-criada NÃO é reapada pelo anti-fantasma, cobrindo
+// a transição de página do host (create -> game) sem socket conectado.
+const REAP_GRACE_MS = 15000;
 
 @WebSocketGateway({ cors: { origin: process.env.WEB_CLIENT_URL || 'http://localhost:3000', credentials: true } })
 @UseGuards(WsThrottlerGuard)
@@ -88,6 +90,15 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
+      // ── Moderation: validate room name ──
+      if (parsed.name) {
+        const nameCheck = checkText(parsed.name, { fieldLabel: 'Nome da sala', minLength: 1, maxLength: 40 });
+        if (!nameCheck.ok) {
+          client.emit('error', { code: 'NAME_REJECTED', message: nameCheck.reason || 'Nome inadequado' });
+          return;
+        }
+      }
+
       // Fetch host name
       const db = getDb();
       const userRec = await db.query.users.findFirst({ where: eq(users.id, hostId) });
@@ -109,6 +120,10 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
 
       await redis.hset(`room:${roomId}`, state);
+      // Marca de criação. Protege a sala recém-criada do "anti-fantasma" do lobby
+      // durante a transição de página do host (create -> game), janela em que ele
+      // fica momentaneamente sem socket conectado.
+      await redis.hset(`room:${roomId}`, { createdAt: Date.now() });
       // Guarda só o hash da senha (nunca o texto puro) para salas privadas.
       if (isPrivate && parsed.password) {
         await redis.hset(`room:${roomId}`, { passwordHash: await hashPassword(parsed.password) });
@@ -255,6 +270,31 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const { roomId, name } = lobbyRenameSchema.parse(payload);
       const userId = client.data?.userId || client.id;
+      const ip = client.handshake.address || '127.0.0.1';
+
+      // Rate limit rename
+      const kvStore = new RedisKvStore(redis);
+      const limit = await checkRateLimit(kvStore, rateKey('renameRoom', ip), RATE_RULES.renameRoom);
+      if (!limit.allowed) {
+        client.emit('error', { code: 'RATE_LIMIT_EXCEEDED', message: 'Rate limit exceeded' });
+        return;
+      }
+
+      // Moderation: validate new name
+      const nameCheck = checkText(name, { fieldLabel: 'Nome da sala', minLength: 1, maxLength: 40 });
+      if (!nameCheck.ok) {
+        client.emit('error', { code: 'NAME_REJECTED', message: nameCheck.reason || 'Nome inadequado' });
+        // Audit rejected rename attempt
+        const db = getDb();
+        await db.insert(auditLog).values({
+          actorId: userId,
+          action: 'name_rejected',
+          target: `room:${roomId}`,
+          metadata: JSON.stringify({ attempted: name, reason: nameCheck.reason }),
+        }).catch(() => {});
+        return;
+      }
+
       const roomData = await redis.hgetall(`room:${roomId}`);
 
       if (!roomData || roomData.hostId !== userId) {
@@ -292,9 +332,26 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       // Mais recentes primeiro.
       const ids = await redis.zrevrange('room:public:index', 0, 49);
+      if (ids.length === 0) return [];
+
+      // 1 round-trip para TODOS os hashes das salas (antes: N hgetall em loop).
+      const pipe = redis.pipeline();
+      ids.forEach((id) => pipe.hgetall(`room:${id}`));
+      const execed = (await pipe.exec()) || [];
+
+      // 1 round-trip agregado de presença entre instâncias (antes: N fetchSockets,
+      // um por sala). server.fetchSockets() devolve todos os sockets; montamos o
+      // conjunto de salas que têm ao menos um socket conectado.
+      const allSockets = await this.server.fetchSockets();
+      const liveRooms = new Set<string>();
+      for (const s of allSockets) {
+        for (const r of s.rooms) liveRooms.add(r);
+      }
+
       const rooms: PublicRoomState[] = [];
-      for (const id of ids) {
-        const r = await redis.hgetall(`room:${id}`);
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i]!;
+        const r = execed[i]?.[1] as Record<string, string> | undefined;
         // Limpa entradas órfãs (expiradas) do índice.
         if (!r || !r.roomId) {
           await redis.zrem('room:public:index', id);
@@ -302,10 +359,19 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
         // Lista salas duo abertas (aguardando oponente), públicas e privadas.
         if (r.status !== 'open' || r.mode === 'solo') continue;
-        // Garantia anti-fantasma: a sala precisa ter alguém realmente conectado
-        // (fetchSockets agrega entre instâncias via Redis adapter). Sem ninguém → deleta.
-        const sockets = await this.server.in(id).fetchSockets();
-        if (sockets.length === 0) {
+        // Anti-fantasma: a sala precisa ter alguém realmente conectado.
+        if (!liveRooms.has(id)) {
+          // Sala recém-criada: o host pode estar trocando de página (create -> game)
+          // e momentaneamente sem socket. Não reapa durante essa graça; também não
+          // lista ainda (aparece assim que o host reconecta).
+          const age = Date.now() - Number(r.createdAt || 0);
+          if (age < REAP_GRACE_MS) continue;
+          // Reconexão em andamento (F5/queda rápida): respeita a graça de saída.
+          const gone = await redis.exists(
+            `gone:${id}:${r.hostId || ''}`,
+            `gone:${id}:${r.guestId || ''}`,
+          );
+          if (gone > 0) continue;
           await this.deleteRoom(id, r);
           continue;
         }
@@ -442,7 +508,7 @@ export class LobbyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const r = roomData || (await redis.hgetall(`room:${roomId}`));
     await redis.del(`room:${roomId}`);
     await redis.zrem('room:public:index', roomId);
-    await redis.del(`game:${roomId}`, `game:${roomId}:questions`);
+    await redis.del(`game:${roomId}`, `game:${roomId}:questions`, `game:${roomId}:answers`);
     if (r?.hostId) {
       await redis.del(`user:${r.hostId}:room`, `room:${roomId}:ready:${r.hostId}`);
     }

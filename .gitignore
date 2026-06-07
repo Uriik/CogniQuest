@@ -12,6 +12,7 @@ build/
 # env / secrets
 .env
 .env.*
+.env_geral
 !.env.example
 
 # logs
@@ -57,3 +58,7 @@ skills/
 
 # documents
 docs/linkedin_post.md
+docs/importante.txt
+
+# scripts and temp DB utils
+scripts/db-utils/
