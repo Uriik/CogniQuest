@@ -61,7 +61,10 @@ export class AuthenticatedIoAdapter extends IoAdapter {
         // --- Monkey-patch Emit for outgoing E2EE encryption ---
         const originalEmit = socket.emit;
         socket.emit = function (this: any, event: string, ...args: any[]) {
-          const encryptedArgs = args.map(arg => encryptPayload(arg));
+          const encryptedArgs = args.map(arg => {
+            if (typeof arg === 'function') return arg;
+            return encryptPayload(arg);
+          });
           return (originalEmit as any).call(this, event, ...encryptedArgs);
         } as any;
         // ------------------------------------------------------
@@ -75,13 +78,18 @@ export class AuthenticatedIoAdapter extends IoAdapter {
     // --- Middleware for incoming E2EE decryption ---
     server.on('connection', (socket) => {
       socket.use((packet, next) => {
-        // packet is an array: [eventName, ...args]
-        if (packet && packet.length > 1) {
-          for (let i = 1; i < packet.length; i++) {
-            packet[i] = decryptPayload(packet[i]);
+        try {
+          if (packet && packet.length > 1) {
+            for (let i = 1; i < packet.length; i++) {
+              if (typeof packet[i] === 'function') continue;
+              packet[i] = decryptPayload(packet[i]);
+            }
           }
+          next();
+        } catch (err) {
+          console.error(`Socket decryption error for event ${packet[0]}:`, err.message);
+          next(new Error('E2EE Decryption failed'));
         }
-        next();
       });
     });
     // -----------------------------------------------

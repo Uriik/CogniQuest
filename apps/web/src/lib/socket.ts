@@ -12,7 +12,10 @@ function applyE2EEPatch(sock: GameSocket) {
 
   const originalEmit = sock.emit;
   sock.emit = function (this: any, event: string, ...args: any[]) {
-    const encryptedArgs = args.map(arg => encryptPayload(arg));
+    const encryptedArgs = args.map(arg => {
+      if (typeof arg === 'function') return arg;
+      return encryptPayload(arg);
+    });
     return (originalEmit as any).call(this, event, ...encryptedArgs);
   } as any;
 
@@ -23,7 +26,10 @@ function applyE2EEPatch(sock: GameSocket) {
   sock.on = function (this: any, event: string, listener: (...args: any[]) => void) {
     const wrapper = function(this: any, ...args: any[]) {
       try {
-        const decryptedArgs = args.map(arg => decryptPayload(arg));
+        const decryptedArgs = args.map(arg => {
+          if (typeof arg === 'function') return arg;
+          return decryptPayload(arg);
+        });
         listener.apply(this, decryptedArgs);
       } catch (err) {
         console.error(`Socket.on(${event}) E2EE decryption failed:`, err);
