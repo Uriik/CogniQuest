@@ -87,7 +87,8 @@ export class AuthenticatedIoAdapter extends IoAdapter {
           }
           next();
         } catch (err) {
-          console.error(`Socket decryption error for event ${packet[0]}:`, err.message);
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          console.error(`Socket decryption error for event ${packet[0]}:`, errorMessage);
           next(new Error('E2EE Decryption failed'));
         }
       });
