@@ -36,7 +36,7 @@ Call log:
 - text: E-mail
 - textbox "E-mail":
   - /placeholder: nome@exemplo.com
-  - text: test_22af22bd@example.com
+  - text: test_644df3d2@example.com
 - text: Senha
 - textbox "Senha":
   - /placeholder: ••••••••

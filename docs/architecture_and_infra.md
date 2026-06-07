@@ -25,6 +25,12 @@ Um quiz em tempo real exige velocidade instantânea (<50ms de latência) e trans
 - **Por que separar?** WebSockets necessitam de conexões **Stateful** (long-lived connections). Se tentássemos embutir o Socket.io diretamente nas API routes do Next.js hospedado em arquiteturas serverless padrão, enfrentaríamos o problema de *cold starts* e queda de conexão constante (o servidor mata o container após ociosidade). 
 - **A Solução:** Isolar o Socket.io em um servidor Node (NestJS) dedicado. Ele roda permanentemente, retendo os Lobbys em memória e distribuindo eventos em milissegundos sem a sobrecarga das rotinas de SSR do frontend.
 
+### Criptografia Transparente no WebSocket (Monkey Patching & E2EE)
+Um desafio crítico foi proteger o tráfego WebSocket de engenharia reversa e scripts maliciosos (DevTools) utilizando End-to-End Encryption (E2EE) com AES. Em vez de reescrever centenas de emissões no cliente e no servidor, utilizamos a técnica de **Monkey Patching**:
+- Sobrescrevemos as funções nativas `socket.emit`, `socket.on` e `socket.off` injetando uma camada (`applyE2EEPatch`) que criptografa e descriptografa automaticamente os payloads de forma transparente.
+- **Circuit Breaker:** Se houver divergência de chaves (ex: `WS_SECRET` ausente em produção), pacotes inválidos disparam um erro controlado e são descartados antes de chegarem ao React, prevenindo *crashes* de renderização (Tela Branca).
+- **Gestão de Memória:** O *patch* cuida para não perder a referência interna do Socket.io. O contexto (`this`) das callbacks é preservado usando `listener.apply(this)`, e o `.off()` original é roteado para remover adequadamente o *wrapper* criptográfico, eliminando riscos de vazamento de memória (Memory Leak) ou quebras de desconexão.
+
 ## 3. Tecnologias Core da Infra
 
 - **Cloudflare:** Atua na borda (Edge) como DNS primário, cache de estáticos, e barreira principal contra bots utilizando o **Turnstile** (Captcha).
