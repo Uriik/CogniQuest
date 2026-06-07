@@ -2,21 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PublicRoomState } from "@cogniquest/shared";
+import { PublicRoomState, gradeSchema, GRADE_LABELS } from "@cogniquest/shared";
 import { useGameSocket } from "../../../hooks/useGameSocket";
 
 export default function LobbyPage() {
   const router = useRouter();
-  const { socket, publicRooms, refreshRooms, isConnected, error } = useGameSocket();
+  const { socket, publicRooms, subscribeLobby, unsubscribeLobby, isConnected, error } = useGameSocket();
   const [inviteCode, setInviteCode] = useState("");
 
-  // Busca a lista de salas públicas ao conectar e atualiza a cada 4s.
+  // Assina para receber as atualizações das salas em tempo real
   useEffect(() => {
     if (!isConnected) return;
-    refreshRooms();
-    const id = setInterval(refreshRooms, 4000);
-    return () => clearInterval(id);
-  }, [isConnected, refreshRooms]);
+    subscribeLobby();
+    
+    return () => unsubscribeLobby();
+  }, [isConnected, subscribeLobby, unsubscribeLobby]);
 
   const handleCreateRoom = () => {
     router.push("/lobby/create");
@@ -90,7 +90,7 @@ export default function LobbyPage() {
               <div className="room-card-body">
                 <div className="room-settings-badge mt-4">
                   <span className="setting-tag">{room.subjectSlug}</span>
-                  <span className="setting-tag">{room.ageBand} anos</span>
+                  <span className="setting-tag">{room.grade && (GRADE_LABELS as Record<string,string>)[room.grade] ? (GRADE_LABELS as Record<string,string>)[room.grade] : room.grade}</span>
                   {!room.isPublic && <span className="setting-tag">🔒 Privada</span>}
                 </div>
               </div>

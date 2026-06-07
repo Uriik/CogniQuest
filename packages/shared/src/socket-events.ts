@@ -5,7 +5,7 @@
  * (`isCorrect`) nor enemy ship positions. The server is the only authority.
  */
 import { z } from "zod";
-import { AGE_BANDS, BOARD_SIZE, SUBJECT_SLUGS } from "./constants";
+import { GRADES, BOARD_SIZE, SUBJECT_SLUGS } from "./constants";
 
 /** A board coordinate (0-indexed). */
 export const coordSchema = z.object({
@@ -14,7 +14,7 @@ export const coordSchema = z.object({
 });
 export type Coord = z.infer<typeof coordSchema>;
 
-export const ageBandSchema = z.enum(AGE_BANDS);
+export const gradeSchema = z.enum(GRADES);
 export const subjectSlugSchema = z.enum(
   SUBJECT_SLUGS as [string, ...string[]],
 );
@@ -26,7 +26,7 @@ export type GameMode = z.infer<typeof gameModeSchema>;
 
 export const lobbyCreateSchema = z.object({
   subjectSlug: subjectSlugSchema,
-  ageBand: ageBandSchema,
+  grade: gradeSchema,
   isPublic: z.boolean(),
   /** Nome amigável da sala (opcional). Default no servidor = "Sala de <host>". */
   name: z.string().min(1).max(40).optional(),
@@ -102,6 +102,8 @@ export interface ClientToServerEvents {
   "lobby:list": () => void;
   "lobby:get": (p: z.infer<typeof lobbyGetInviteSchema>) => void;
   "lobby:rename": (p: z.infer<typeof lobbyRenameSchema>) => void;
+  "lobby:subscribe": () => void;
+  "lobby:unsubscribe": () => void;
 }
 
 /* ============================ SERVER → CLIENT ============================ */
@@ -152,8 +154,8 @@ export interface PublicRoomState {
   hostName: string;
   guestId: string | null;
   guestName: string | null;
-  subjectSlug: string;
-  ageBand: string;
+  subjectSlug?: string;
+  grade?: string;
   status: "open" | "ready" | "in_game" | "finished" | "abandoned";
   isPublic: boolean;
   mode: "solo" | "duo";
@@ -174,7 +176,7 @@ export function toPublicRoomState(
     guestId: r.guestId && r.guestId !== "" ? r.guestId : null,
     guestName: r.guestName && r.guestName !== "" ? r.guestName : null,
     subjectSlug: r.subjectSlug ?? "",
-    ageBand: r.ageBand ?? "",
+    grade: r.grade ?? "",
     status: (r.status as PublicRoomState["status"]) || "open",
     isPublic: r.isPublic === "true",
     mode: (r.mode as PublicRoomState["mode"]) || "duo",

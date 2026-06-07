@@ -16,7 +16,7 @@ test.describe('Gameplay Flow', () => {
           email: hostEmail,
           password: password,
           displayName: 'Host Player',
-          ageBand: '15+',
+          grade: '3-em',
           turnstileToken: 'dummy-token'
         }
       });
@@ -25,7 +25,7 @@ test.describe('Gameplay Flow', () => {
           email: guestEmail,
           password: password,
           displayName: 'Guest Player',
-          ageBand: '15+',
+          grade: '3-em',
           turnstileToken: 'dummy-token'
         }
       });
@@ -53,7 +53,7 @@ test.describe('Gameplay Flow', () => {
     await hostPage.click('text=Criar Sala'); // assuming a button with this text
     // Assuming a dialog pops up
     await hostPage.selectOption('select[name="subjectSlug"]', 'math');
-    await hostPage.selectOption('select[name="ageBand"]', '15+');
+    await hostPage.click('button:has-text("3º EM")');
     await hostPage.click('button[type="submit"]');
 
     // Host should see lobby or game UI, wait for invite code

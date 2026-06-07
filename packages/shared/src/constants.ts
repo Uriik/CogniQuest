@@ -3,9 +3,19 @@
  * Single source of truth for age bands, subjects, fleet and board.
  */
 
-/** Difficulty by age band. */
-export const AGE_BANDS = ["6-8", "9-11", "12-14", "15+"] as const;
-export type AgeBand = (typeof AGE_BANDS)[number];
+/** Difficulty by school grade. */
+export const GRADES = ["6-ano", "7-ano", "8-ano", "9-ano", "1-em", "2-em", "3-em"] as const;
+export type Grade = (typeof GRADES)[number];
+
+export const GRADE_LABELS: Record<Grade, string> = {
+  "6-ano": "6º Ano",
+  "7-ano": "7º Ano",
+  "8-ano": "8º Ano",
+  "9-ano": "9º Ano",
+  "1-em": "1º EM",
+  "2-em": "2º EM",
+  "3-em": "3º EM",
+};
 
 /** Subjects (slugs map to SVG icons in assets/). */
 export const SUBJECTS = [

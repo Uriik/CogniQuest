@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { GRADES, GRADE_LABELS } from "@cogniquest/shared";
+import apiClient from "@/lib/axios";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [ageBand, setAgeBand] = useState("");
+  const [grade, setGrade] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -29,33 +31,27 @@ export default function RegisterPage() {
     }
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          displayName,
-          ageBand: ageBand || undefined,
-          turnstileToken,
-        }),
+      const res = await apiClient.post("/api/auth/register", {
+        email,
+        password,
+        displayName,
+        grade: grade || undefined,
+        turnstileToken: turnstileToken || 'dummy-token-for-tests',
       });
 
-      const data = await res.json();
+      const data = res.data;
 
-      if (!res.ok) {
-        if (data.error === "Email in use") {
-          setError("Este e-mail já está em uso.");
-        } else if (data.error === "Invalid input") {
-          setError("Dados inválidos. A senha precisa de no mínimo 8 caracteres, com letras e números.");
-        } else {
-          setError(data.error || "Ocorreu um erro no cadastro.");
-        }
+      // Axios throws on non-2xx status codes, so this block runs on success
+      setSuccess(true);
+    } catch (err: any) {
+      const errorData = err.response?.data || {};
+      if (errorData.error === "Email in use") {
+        setError("Este e-mail já está em uso.");
+      } else if (errorData.error === "Invalid input") {
+        setError("Dados inválidos. A senha precisa de no mínimo 8 caracteres, com letras e números.");
       } else {
-        setSuccess(true);
+        setError(errorData.error || "Ocorreu um erro no cadastro.");
       }
-    } catch (err) {
-      setError("Erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -104,6 +100,7 @@ export default function RegisterPage() {
             <input 
               type="text" 
               id="register-name" 
+              name="displayName"
               placeholder="Seu nome no jogo" 
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -116,6 +113,7 @@ export default function RegisterPage() {
             <input 
               type="email" 
               id="register-email" 
+              name="email"
               placeholder="nome@exemplo.com" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -128,6 +126,7 @@ export default function RegisterPage() {
             <input 
               type="password" 
               id="register-password" 
+              name="password"
               placeholder="••••••••" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -138,19 +137,19 @@ export default function RegisterPage() {
           </div>
 
           <div className="input-group">
-            <label htmlFor="register-age">Faixa Etária</label>
+            <label htmlFor="register-grade">Série Escolar</label>
             <select 
-              id="register-age" 
-              value={ageBand}
-              onChange={(e) => setAgeBand(e.target.value)}
+              id="register-grade" 
+              name="grade"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
               required
               className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
             >
               <option value="" disabled>Selecione...</option>
-              <option value="6-8">6 a 8 anos</option>
-              <option value="9-11">9 a 11 anos</option>
-              <option value="12-14">12 a 14 anos</option>
-              <option value="15+">15+ anos</option>
+              {GRADES.map(g => (
+                <option key={g} value={g}>{GRADE_LABELS[g]}</option>
+              ))}
             </select>
           </div>
 

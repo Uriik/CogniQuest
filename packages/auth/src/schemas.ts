@@ -3,7 +3,7 @@
  * and the game-server. Password policy enforced here.
  */
 import { z } from "zod";
-import { AGE_BANDS } from "@cogniquest/shared";
+import { GRADES } from "@cogniquest/shared";
 
 /** Min 8 chars, at least one letter and one number. Tune as needed. */
 export const passwordSchema = z
@@ -19,7 +19,7 @@ export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   displayName: z.string().min(2).max(40),
-  ageBand: z.enum(AGE_BANDS).optional(),
+  grade: z.enum(GRADES).optional(),
   turnstileToken: z.string().min(10),
 });
 

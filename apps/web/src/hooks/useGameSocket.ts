@@ -110,9 +110,14 @@ export function useGameSocket() {
 
   const isMyTurn = Boolean(gameState?.turn && session?.user?.id && gameState.turn === session.user.id);
 
-  // Pede ao servidor a lista de salas públicas abertas.
-  const refreshRooms = useCallback(() => {
-    socket?.emit("lobby:list");
+  // Assina os eventos push do lobby para receber atualizações automáticas
+  const subscribeLobby = useCallback(() => {
+    socket?.emit("lobby:subscribe");
+  }, [socket]);
+
+  // Desassina os eventos push do lobby ao sair da tela
+  const unsubscribeLobby = useCallback(() => {
+    socket?.emit("lobby:unsubscribe");
   }, [socket]);
 
   return {
@@ -120,7 +125,8 @@ export function useGameSocket() {
     isConnected,
     roomState,
     publicRooms,
-    refreshRooms,
+    subscribeLobby,
+    unsubscribeLobby,
     gameState,
     myFleet,
     enemyFleet,

@@ -18,7 +18,7 @@ async function main() {
     throw new Error("Math subject not found in DB!");
   }
 
-  const csvPath = path.resolve(process.cwd(), "../../matematica/matematica_completo.csv");
+  const csvPath = path.resolve(process.cwd(), "../../matematica/matematica_series.csv");
   console.log(`Reading from: ${csvPath}`);
 
   const fileStream = fs.createReadStream(csvPath);
@@ -41,14 +41,14 @@ async function main() {
     const parts = line.split(";");
     if (parts.length < 7) continue;
 
-    const [ageBand, prompt, optA, optB, optC, optD, correct] = parts;
+    const [grade, prompt, optA, optB, optC, optD, correct] = parts;
     const answerIndex = correct === 'A' ? 0 : correct === 'B' ? 1 : correct === 'C' ? 2 : correct === 'D' ? 3 : 0;
     
     const questionId = crypto.randomUUID();
     batchQuestions.push({
       id: questionId,
       subjectId: mathSubject.id,
-      ageBand: ageBand as any,
+      grade: grade as any,
       prompt: prompt
     });
 

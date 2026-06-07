@@ -19,8 +19,8 @@ export interface CacheStore {
   set(key: string, value: string, ttlSeconds?: number): Promise<void>;
 }
 
-export const cacheKey = (subjectSlug: string, ageBand: string) =>
-  `qcache:${subjectSlug}:${ageBand}`;
+export const cacheKey = (subjectSlug: string, grade: string) =>
+  `qcache:${subjectSlug}:${grade}`;
 
 /**
  * Fetches random questions, projecting ONLY public columns (no isCorrect).
@@ -28,7 +28,7 @@ export const cacheKey = (subjectSlug: string, ageBand: string) =>
  */
 export async function getRandomQuestions(
   subjectSlug: string,
-  ageBand: string,
+  grade: string,
   limit: number = 50,
   store?: CacheStore
 ): Promise<PublicQuestion[]> {
@@ -41,7 +41,7 @@ export async function getRandomQuestions(
     })
     .from(questions)
     .innerJoin(subjects, eq(questions.subjectId, subjects.id))
-    .where(and(eq(subjects.slug, subjectSlug), eq(questions.ageBand, ageBand)))
+    .where(and(eq(subjects.slug, subjectSlug), eq(questions.grade, grade)))
     .orderBy(sql`RANDOM()`)
     .limit(limit);
 

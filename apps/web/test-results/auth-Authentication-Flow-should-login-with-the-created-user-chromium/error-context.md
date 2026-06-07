@@ -1,0 +1,99 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: auth.spec.ts >> Authentication Flow >> should login with the created user
+- Location: e2e\auth.spec.ts:29:7
+
+# Error details
+
+```
+Error: expect(page).toHaveURL(expected) failed
+
+Expected: "http://localhost:3000/"
+Received: "http://localhost:3000/login"
+Timeout:  10000ms
+
+Call log:
+  - Expect "toHaveURL" with timeout 10000ms
+    24 × unexpected value "http://localhost:3000/login"
+
+```
+
+```yaml
+- img "CogniQuest Logo"
+- heading "Acesse sua Conta" [level=2]
+- paragraph: Entre na arena do conhecimento gamificado
+- text: E-mail ou senha incorretos. E-mail
+- textbox "E-mail":
+  - /placeholder: nome@exemplo.com
+  - text: test_a39a6d20@example.com
+- text: Senha
+- link "Esqueci a senha":
+  - /url: /forgot-password
+- textbox "Senha":
+  - /placeholder: ••••••••
+  - text: TestPassword123!
+- button "Entrar na Arena"
+- text: Não tem uma conta?
+- link "Cadastrar-se":
+  - /url: /register
+- alert
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { randomUUID } from 'crypto';
+  3  | 
+  4  | test.describe('Authentication Flow', () => {
+  5  |   const randomEmail = `test_${randomUUID().substring(0, 8)}@example.com`;
+  6  |   const password = 'TestPassword123!';
+  7  | 
+  8  |   test('should register a new user', async ({ page }) => {
+  9  |     // Go to registration page
+  10 |     await page.goto('/register');
+  11 |     
+  12 |     // Fill out the form
+  13 |     await page.fill('input[name="displayName"]', 'Playwright Tester');
+  14 |     await page.fill('input[name="email"]', randomEmail);
+  15 |     await page.fill('input[name="password"]', password);
+  16 |     
+  17 |     // Select age band
+  18 |     await page.selectOption('select[name="grade"]', '3-em');
+  19 |     
+  20 |     // Note: Turnstile might block automated tests unless we use a mock token or test site key.
+  21 |     // Assuming process.env.TURNSTILE_SECRET_KEY is mocked or disabled in test env.
+  22 |     
+  23 |     await page.click('button[type="submit"]');
+  24 | 
+  25 |     // Wait for redirect to login or success message
+  26 |     await expect(page.locator('text=Cadastro Realizado!')).toBeVisible({ timeout: 10000 });
+  27 |   });
+  28 | 
+  29 |   test('should login with the created user', async ({ page }) => {
+  30 |     // The previous test doesn't share state, so we will try to login
+  31 |     // Depending on DB persistence across tests, this might fail if DB is reset.
+  32 |     // Assuming DB is persistent for the run.
+  33 |     await page.goto('/login');
+  34 |     
+  35 |     await page.fill('input[name="email"]', randomEmail);
+  36 |     await page.fill('input[name="password"]', password);
+  37 |     
+  38 |     await page.click('button[type="submit"]');
+  39 | 
+  40 |     // Verify successful login by checking for dashboard/lobby redirect
+> 41 |     await expect(page).toHaveURL('/', { timeout: 10000 });
+     |                        ^ Error: expect(page).toHaveURL(expected) failed
+  42 |     
+  43 |     // Check if user name is displayed
+  44 |     await expect(page.locator('text=Playwright Tester')).toBeVisible();
+  45 |   });
+  46 | });
+  47 | 
+```

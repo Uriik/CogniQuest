@@ -15,7 +15,7 @@ test.describe('Authentication Flow', () => {
     await page.fill('input[name="password"]', password);
     
     // Select age band
-    await page.selectOption('select[name="ageBand"]', '15+');
+    await page.selectOption('select[name="grade"]', '3-em');
     
     // Note: Turnstile might block automated tests unless we use a mock token or test site key.
     // Assuming process.env.TURNSTILE_SECRET_KEY is mocked or disabled in test env.
@@ -23,7 +23,7 @@ test.describe('Authentication Flow', () => {
     await page.click('button[type="submit"]');
 
     // Wait for redirect to login or success message
-    await expect(page).toHaveURL('/login?registered=true', { timeout: 10000 });
+    await expect(page.locator('text=Cadastro Realizado!')).toBeVisible({ timeout: 10000 });
   });
 
   test('should login with the created user', async ({ page }) => {

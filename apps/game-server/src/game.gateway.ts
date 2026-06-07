@@ -7,6 +7,8 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { UseGuards } from '@nestjs/common';
+import { WsThrottlerGuard } from './common/guards/ws-throttler.guard';
 import { Server, Socket } from 'socket.io';
 import { gameReadySchema, gameAnswerSchema, gameAttackIntentSchema, gameAttackSchema, gameUseHintSchema, PublicGameState, toPublicRoomState } from '@cogniquest/shared';
 import { checkRateLimit, RATE_RULES, RedisKvStore, rateKey } from '@cogniquest/auth';
@@ -19,6 +21,7 @@ const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 redis.on('error', (err) => console.error('Redis Error:', err.message));
 
 @WebSocketGateway({ cors: { origin: process.env.WEB_CLIENT_URL || 'http://localhost:3000', credentials: true } })
+@UseGuards(WsThrottlerGuard)
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
@@ -147,7 +150,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // IMPORTANTE: prepara TUDO (perguntas, estado) ANTES de marcar in_game.
         // Se algo falhar aqui, o status continua 'ready' e ninguém fica preso
         // numa sala 'in_game' sem nunca receber os eventos de início.
-        const fetchedQs = await getRandomQuestions(roomData.subjectSlug!, roomData.ageBand!, 50);
+        const fetchedQs = await getRandomQuestions(roomData.subjectSlug!, roomData.grade!, 50);
         await redis.set(`game:${roomId}`, JSON.stringify(gameState), 'EX', 86400);
         await redis.set(`game:${roomId}:questions`, JSON.stringify(fetchedQs), 'EX', 86400);
 
@@ -213,7 +216,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // Se acabaram as perguntas da memória, busca um novo lote de 50 no banco de dados
         if (qs.length === 0) {
           const roomData = await redis.hgetall(`room:${roomId}`);
-          qs = await getRandomQuestions(roomData.subjectSlug!, roomData.ageBand!, 50);
+          qs = await getRandomQuestions(roomData.subjectSlug!, roomData.grade!, 50);
         }
 
         const randomIndex = Math.floor(Math.random() * qs.length);
@@ -616,7 +619,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       hostId: roomData.hostId,
       guestId: realGuestId,
       subjectId: subject.id,
-      ageBand: roomData.ageBand,
+      grade: roomData.grade,
       winnerId: winnerId,
       status: status,
       startedAt: new Date(), 
