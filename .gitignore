@@ -12,6 +12,7 @@ build/
 # env / secrets
 .env
 .env.*
+.env_geral
 !.env.example
 
 # logs
